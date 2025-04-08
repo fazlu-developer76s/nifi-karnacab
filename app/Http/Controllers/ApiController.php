@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Http;
 use App\Models\Banner;
 use PDF;
 use App\Models\Blog;
@@ -152,6 +153,177 @@ class ApiController extends Controller
             ],401);
         }
     }
+
+    public function getAddressCoordinate($address)
+    {
+        $apiKey = getenv('GOOGLE_MAPS_API');
+        $url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($address) . "&key=" . $apiKey;
+
+        $response = file_get_contents($url);
+        $data = json_decode($response, true);
+
+        if ($data['status'] === 'OK') {
+            $location = $data['results'][0]['geometry']['location'];
+            return [
+                'ltd' => $location['lat'],
+                'lng' => $location['lng']
+            ];
+        } else {
+            throw new Exception('Unable to fetch coordinates');
+        }
+    }
+
+    public function get_suggestion(Request $request)
+    {
+        $request->validate([
+            'search' => 'required|string|max:255',
+        ]);
+        $apiKey = env('GOOGLE_MAPS_API');
+        $input = urlencode($request->search);
+        $url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?input={$input}&key={$apiKey}";
+        try {
+            $response = file_get_contents($url);
+            if ($response === false) {
+                throw new \Exception('Failed to fetch data from Google API.');
+            }
+            $data = json_decode($response, true);
+            if (isset($data['status']) && $data['status'] === 'OK') {
+                return response()->json([
+                    'status' => 'success',
+                    'suggestions' => array_filter(array_column($data['predictions'], 'description')),
+                ], 200);
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $data['error_message'] ?? 'Unable to fetch suggestions',
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Something went wrong: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+
+    public function get_booking_vehicle(Request $request)
+    {
+        $rules = [
+            'current_lat'      => 'required',
+            'current_long'     => 'required',
+            'vehicle_type'     => 'required',
+            'current_address'  => 'required',
+            'drop_address'     => 'required',
+        ];
+
+        $validate = \Myhelper::FormValidator($rules, $request);
+        if ($validate !== "no") {
+            return response()->json(['status' => false, 'errors' => $validate], 422);
+        }
+
+        $apiKey = env('GOOGLE_MAPS_API');
+        $get_radius = 10;
+
+        // Step 1: Get Captains within radius
+        $captains = $this->getCaptainsInRadius(
+            $request->current_lat,
+            $request->current_long,
+            $get_radius,
+            $request->vehicle_type
+        );
+
+        // Step 2: Get drop location lat/lng from drop_address
+        $geocodeResponse = Http::get("https://maps.googleapis.com/maps/api/geocode/json", [
+            'address' => $request->drop_address,
+            'key'     => $apiKey
+        ]);
+
+        $geocodeData = $geocodeResponse->json();
+        if (empty($geocodeData['results'][0])) {
+            return response()->json(['status' => false, 'message' => 'Invalid drop address'], 400);
+        }
+
+        $dropLocation = $geocodeData['results'][0]['geometry']['location'];
+
+        // Step 3: Get trip distance/duration from current to drop
+        $distanceMatrixResponse = Http::get("https://maps.googleapis.com/maps/api/distancematrix/json", [
+            'origins'      => $request->current_address,
+            'destinations' => $request->drop_address,
+            'key'          => $apiKey
+        ]);
+
+        $matrixData = $distanceMatrixResponse->json();
+
+        if (
+            $matrixData['status'] !== 'OK' ||
+            $matrixData['rows'][0]['elements'][0]['status'] === 'ZERO_RESULTS'
+        ) {
+            return response()->json(['status' => false, 'message' => 'Could not calculate route distance.'], 400);
+        }
+
+        $tripDuration = $matrixData['rows'][0]['elements'][0];
+
+        // Step 4: Loop through captains and calculate distance from source to captain
+        $captainList = [];
+
+        foreach ($captains as $captain) {
+            $distanceResponse = Http::get("https://maps.googleapis.com/maps/api/distancematrix/json", [
+                'origins'      => "{$request->current_lat},{$request->current_long}",
+                'destinations' => "{$captain->lat},{$captain->long}",
+                'key'          => $apiKey
+            ]);
+
+            $distData = $distanceResponse->json();
+            if (
+                empty($distData['rows'][0]['elements'][0]['status']) ||
+                $distData['rows'][0]['elements'][0]['status'] !== 'OK'
+            ) {
+                continue; // skip captain if we can't calculate distance
+            }
+
+            $captainDistance = $distData['rows'][0]['elements'][0];
+
+            $vehicle = Vehicle::where('status', 1)->where('id', $captain->car_id)->first();
+
+            $captainList[] = [
+                'captain_id'           => $captain->id,
+                'captain_name'         => $captain->name ?? null,
+                'vehicle_info'         => $vehicle,
+                'captain_distance'     => [
+                    'distance' => $captainDistance['distance']['text'],
+                    'duration' => $captainDistance['duration']['text'],
+                ],
+                'trip_to_drop'         => $tripDuration,
+                'destination_lat_lng'  => $dropLocation
+            ];
+        }
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Nearby captains fetched successfully',
+            'data'    => $captainList
+        ]);
+    }
+
+
+
+
+
+    public function getCaptainsInRadius($lat, $lng, $radius, $vehicle_type)
+    {
+        $captains = DB::table('users')
+        ->select('*', DB::raw("(6371 * acos(cos(radians($lat)) * cos(radians(lat)) * cos(radians(`long`) - radians($lng)) + sin(radians($lat)) * sin(radians(lat)))) AS distance"))
+        ->where('ride_vehicle_type', $vehicle_type)
+        ->where('role_id', 2)
+        ->having('distance', '<=', $radius)
+        ->orderBy('distance', 'asc')
+        ->get();
+        return $captains;
+    }
+
 
     public function create_booking(Request $request)
     {

@@ -441,7 +441,40 @@ class AuthController extends Controller
     }
     public function update_profile(Request $request)
     {
+
+        if (!empty($request->lat) && !empty($request->long)) {
+            $apiKey = env('GOOGLE_MAPS_API');
+            $lat = $request->lat;
+            $lng = $request->long;
+            $url = "https://maps.googleapis.com/maps/api/geocode/json?latlng={$lat},{$lng}&key={$apiKey}";
+            $response = file_get_contents($url);
+            $responseData = json_decode($response, true);
+            $formattedAddress = "";
+            if (!empty($responseData['results'])) {
+                // Get the formatted address
+                $formattedAddress = $responseData['results'][0]['formatted_address'];
+
+                // return response()->json([
+                //     'address' => $formattedAddress
+                // ]);
+            }
+        }
+
+        // if (!empty($request->lat) && !empty($request->long)) {
+        //     $apiKey = '9d52cf15543e4b1d9517f51ba60e6961';
+        //     $url = "https://api.opencagedata.com/geocode/v1/json?q={$request->lat}+{$request->long}&key={$apiKey}";
+        //     $response = file_get_contents($url);
+        //     $responseData = json_decode($response, true);
+        //     if (!empty($responseData['results'])) {
+        //         $formattedAddress = $responseData['results'][0]['formatted'];
+        //         // return response()->json([
+        //         //     'address' => $formattedAddress
+        //         // ]);
+        //     }
+        // }
+
         $user = User::findOrFail($request->user->id);
+        $user->current_address =  $formattedAddress;
         if ($request->hasFile('vehicle_image')) {
             foreach ($request->file('vehicle_image') as $image) {
                 $filePath = $image->store('vehicle_image', 'public');
@@ -461,7 +494,7 @@ class AuthController extends Controller
             'permanent_address', 'vehicle_type', 'vehicle_capicity',
             'registration_number', 'service_expiry_date', 'dl_number',
             'dl_front_image', 'dl_back_image', 'rc_number', 'rc_front_image',
-            'rc_back_image', 'ins_number', 'ins_image', 'police_verification' , 'bank_name' ,'ifsc_code','account_number','aadhar_front_image','aadhar_back_image','pan_front_image','pan_back_image','ride_state','ride_vehicle_type','dob','dl_validity','car_id'
+            'rc_back_image', 'ins_number', 'ins_image', 'police_verification' , 'bank_name' ,'ifsc_code','account_number','aadhar_front_image','aadhar_back_image','pan_front_image','pan_back_image','ride_state','ride_vehicle_type','dob','dl_validity','car_id','lat','long'
         ];
         $fileFields = [
             'image','dl_front_image', 'dl_back_image', 'rc_front_image',

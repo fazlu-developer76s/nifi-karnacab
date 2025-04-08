@@ -34,6 +34,7 @@ class CompanyController extends Controller
             'mobile' => 'required|numeric',
             'booking_percentage' => 'required|numeric|min:0',
             'booking_tax' => 'required|numeric|min:0',
+            'radius' => 'required|numeric|min:1',
             'booking_post_percentage' => 'required|numeric|min:0',
             'booking_post_tds' => 'required|numeric|min:0',
         ]);
@@ -57,6 +58,7 @@ class CompanyController extends Controller
         $company->booking_post_tds = $request->booking_post_tds;
         $company->address = $request->address;
         $company->email = $request->email;
+        $company->radius = $request->radius;
         $company->mobile = $request->mobile;
 
 

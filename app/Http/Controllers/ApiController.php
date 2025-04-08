@@ -212,98 +212,109 @@ class ApiController extends Controller
     public function get_booking_vehicle(Request $request)
     {
         $rules = [
-            'current_lat'      => 'required',
-            'current_long'     => 'required',
-            'vehicle_type'     => 'required',
             'current_address'  => 'required',
             'drop_address'     => 'required',
         ];
-
         $validate = \Myhelper::FormValidator($rules, $request);
         if ($validate !== "no") {
             return response()->json(['status' => false, 'errors' => $validate], 422);
         }
-
         $apiKey = env('GOOGLE_MAPS_API');
-        $get_radius = 10;
-
-        // Step 1: Get Captains within radius
-        $captains = $this->getCaptainsInRadius(
-            $request->current_lat,
-            $request->current_long,
-            $get_radius,
-            $request->vehicle_type
-        );
-
-        // Step 2: Get drop location lat/lng from drop_address
+        $get_radius = Global_helper::companyDetails()->radius;
+        // Step 1: Get current  location lat/lng from drop_address
         $geocodeResponse = Http::get("https://maps.googleapis.com/maps/api/geocode/json", [
-            'address' => $request->drop_address,
+            'address' => $request->current_address,
             'key'     => $apiKey
         ]);
-
         $geocodeData = $geocodeResponse->json();
         if (empty($geocodeData['results'][0])) {
             return response()->json(['status' => false, 'message' => 'Invalid drop address'], 400);
         }
-
+        $getCurrent = $geocodeData['results'][0]['geometry']['location'];
+        // Step 2: Get Vehcile within radius
+        $captains = $this->getCaptainsInRadius(
+            $getCurrent['lat'],
+            $getCurrent['lng'],
+            $get_radius,
+            $request->vehicle_type
+        );
+        // Step 3: Get drop location lat/lng from drop_address
+        $geocodeResponse = Http::get("https://maps.googleapis.com/maps/api/geocode/json", [
+            'address' => $request->drop_address,
+            'key'     => $apiKey
+        ]);
+        $geocodeData = $geocodeResponse->json();
+        if (empty($geocodeData['results'][0])) {
+            return response()->json(['status' => false, 'message' => 'Invalid drop address'], 400);
+        }
         $dropLocation = $geocodeData['results'][0]['geometry']['location'];
 
-        // Step 3: Get trip distance/duration from current to drop
+        // check if the drop address is in the same state as the current address
+        $dropAddressUrl = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($request->drop_address) . "&key=" . $apiKey;
+        $dropResponse = Http::get($dropAddressUrl);
+        $dropData = $dropResponse->json();
+        if (empty($dropData['results'][0])) {
+            return response()->json(['status' => false, 'message' => 'Invalid drop address'], 400);
+        }
+        $dropState = null;
+        foreach ($dropData['results'][0]['address_components'] as $component) {
+            if (in_array('administrative_area_level_1', $component['types'])) {
+                $dropState = $component['long_name'];
+                break;
+            }
+        }
+        if (!$dropState) {
+            return response()->json(['status' => false, 'message' => 'Unable to extract state from drop address'], 400);
+        }
+        $checkState = DB::table('tbl_state')->where('title', $dropState)->first();
+        if (!$checkState) {
+            return response()->json(['status' => false, 'message' => 'Drop address is outside serviceable states'], 400);
+        }
+
+        // Step 4: Get trip distance/duration from current to drop
         $distanceMatrixResponse = Http::get("https://maps.googleapis.com/maps/api/distancematrix/json", [
             'origins'      => $request->current_address,
             'destinations' => $request->drop_address,
             'key'          => $apiKey
         ]);
-
         $matrixData = $distanceMatrixResponse->json();
-
         if (
             $matrixData['status'] !== 'OK' ||
             $matrixData['rows'][0]['elements'][0]['status'] === 'ZERO_RESULTS'
         ) {
             return response()->json(['status' => false, 'message' => 'Could not calculate route distance.'], 400);
         }
-
         $tripDuration = $matrixData['rows'][0]['elements'][0];
 
-        // Step 4: Loop through captains and calculate distance from source to captain
+        // Step 5: Loop through vehcile and calculate distance from source
         $captainList = [];
-
         foreach ($captains as $captain) {
-            $distanceResponse = Http::get("https://maps.googleapis.com/maps/api/distancematrix/json", [
-                'origins'      => "{$request->current_lat},{$request->current_long}",
-                'destinations' => "{$captain->lat},{$captain->long}",
-                'key'          => $apiKey
-            ]);
-
-            $distData = $distanceResponse->json();
-            if (
-                empty($distData['rows'][0]['elements'][0]['status']) ||
-                $distData['rows'][0]['elements'][0]['status'] !== 'OK'
-            ) {
-                continue; // skip captain if we can't calculate distance
+            $tripDistanceInKm = 0;
+            if (isset($tripDuration['distance']['text'])) {
+                $distanceText = $tripDuration['distance']['text']; // e.g., "12.4 km"
+                $tripDistanceInKm = floatval(str_replace(['km', 'Kms', 'KM', ','], '', $distanceText));
             }
 
-            $captainDistance = $distData['rows'][0]['elements'][0];
-
-            $vehicle = Vehicle::where('status', 1)->where('id', $captain->car_id)->first();
-
+            $kiloRate = $captain->kilo_meter ?? 0;
+            $extraCharges = $captain->extra_charges ?? 0;
+            $totalFare = ($tripDistanceInKm * $kiloRate) + ($tripDistanceInKm * $extraCharges);
+            $captain->kilo_meter_details = [
+                'trip_distance_km' => $tripDistanceInKm,
+                'rate_per_km'      => $kiloRate,
+                'extra_charges'    => $extraCharges,
+                'calculated_fare'  => round($totalFare, 2),
+            ];
             $captainList[] = [
-                'captain_id'           => $captain->id,
-                'captain_name'         => $captain->name ?? null,
-                'vehicle_info'         => $vehicle,
-                'captain_distance'     => [
-                    'distance' => $captainDistance['distance']['text'],
-                    'duration' => $captainDistance['duration']['text'],
-                ],
+                'vehicle_info'         => $captain,
                 'trip_to_drop'         => $tripDuration,
-                'destination_lat_lng'  => $dropLocation
+                'destination_lat_lng'  => $dropLocation,
+                'current_lat_lng'      => $getCurrent
             ];
         }
 
         return response()->json([
-            'status'  => true,
-            'message' => 'Nearby captains fetched successfully',
+            'status'  => 'OK',
+            'message' => 'Nearby vehicle fetched successfully',
             'data'    => $captainList
         ]);
     }
@@ -314,143 +325,107 @@ class ApiController extends Controller
 
     public function getCaptainsInRadius($lat, $lng, $radius, $vehicle_type)
     {
-        $captains = DB::table('users')
-        ->select('*', DB::raw("(6371 * acos(cos(radians($lat)) * cos(radians(lat)) * cos(radians(`long`) - radians($lng)) + sin(radians($lat)) * sin(radians(lat)))) AS distance"))
-        ->where('ride_vehicle_type', $vehicle_type)
-        ->where('role_id', 2)
-        ->having('distance', '<=', $radius)
-        ->orderBy('distance', 'asc')
-        ->get();
-        return $captains;
+
+
+
+        $get_vehicle = DB::table('tbl_vehicle')->where('status', 1)->get();
+        $new_data = [];
+        foreach($get_vehicle as $row){
+            $captains = DB::table('users')
+            ->select('*', DB::raw("(6371 * acos(cos(radians($lat)) * cos(radians(lat)) * cos(radians(`long`) - radians($lng)) + sin(radians($lat)) * sin(radians(lat)))) AS distance"))
+            // ->where('ride_vehicle_type', $vehicle_type)
+            ->where('car_id', $row->id)
+            ->where('role_id', 2)
+            ->having('distance', '<=', $radius)
+            ->orderBy('distance', 'asc')
+            ->get();
+            $row->captain = $captains;
+            $new_data[] = $row;
+         }
+         return $new_data;
+
     }
 
 
     public function create_booking(Request $request)
     {
-
-
-        $rules = ([
-            'name' => 'required|string|max:255',
-            'email_id' => 'required|email|max:255',
-            'mobile_no' => 'required|string|max:255',
-            'num_of_people' => 'required|integer|min:1',
-            'num_of_lady' => 'nullable|integer|min:0',
-            'num_of_men' => 'nullable|integer|min:0',
-            'num_of_child' => 'nullable|integer|min:0',
-            'pick_up_date' => 'required|date',
-            'pick_up_time' => 'required|string|max:255',
-            // 'pick_up_location' => 'required|string|max:255',
-            'drop_us_location' => 'required|string|max:255',
-            'booking_amount' => 'required|numeric|min:0',
-            'note' => 'nullable|string',
-            'seater' => 'required|integer|min:1',
-        ]);
+        $rules = [
+            // 'captain_id' => 'required|integer',
+            // 'vehicle_id' => 'required|integer',
+            'vehicle_title' => 'required|string|max:100',
+            'vehicle_image' => 'required|string|max:255',
+            'vehicle_kilo_meter' => 'required|string|max:50',
+            'vehicle_extra_charges' => 'required|string|max:50',
+            'vehicle_seater' => 'required|integer',
+            'trip_distance_km' => 'required|numeric',
+            'rate_per_km' => 'required|numeric',
+            'calculated_fare' => 'required|numeric',
+            // 'captain_distance_text' => 'required|string|max:50',
+            // 'captain_duration_text' => 'required|string|max:50',
+            'trip_distance_text' => 'required|string|max:50',
+            // 'trip_distance_value' => 'required|integer',
+            'trip_duration_text' => 'required|string|max:50',
+            // 'trip_duration_value' => 'required|integer',
+            'current_lat' => 'required|numeric',
+            'current_lng' => 'required|numeric',
+            'current_address' => 'required|string|max:255',
+            'drop_lat' => 'required|numeric',
+            'drop_lng' => 'required|numeric',
+            'drop_address' => 'required|string|max:255'
+        ];
         $validate = \Myhelper::FormValidator($rules, $request);
         if ($validate != "no") {
             return $validate;
         }
         $booking = new Booking();
         $booking->user_id = $request->user->id;
-        $booking->name = $request->name;
-        $booking->email_id = $request->email_id;
-        $booking->mobile_no = $request->mobile_no;
-        $booking->num_of_people = $request->num_of_people;
-        $booking->num_of_lady = $request->num_of_lady;
-        $booking->num_of_men = $request->num_of_men;
-        $booking->num_of_child = $request->num_of_child;
-        $booking->pick_up_date = $request->pick_up_date;
-        $booking->pick_up_time = $request->pick_up_time;
-        $booking->pick_up_location = $request->pick_up_location;
-        if ($request->late) {
-            $booking->late = $request->late;
-        }
-        if ($request->long) {
-            $booking->long = $request->long;
-        }
-
-        if (!empty($request->late) && !empty($request->long)) {
-            $apiKey = '9d52cf15543e4b1d9517f51ba60e6961';
-            $url = "https://api.opencagedata.com/geocode/v1/json?q={$request->late}+{$request->long}&key={$apiKey}";
-            $response = file_get_contents($url);
-            $responseData = json_decode($response, true);
-            if (!empty($responseData['results'])) {
-                $addressComponents = $responseData['results'][0]['components'];
-            }
-            if (isset($addressComponents['postcode'])) {
-                $booking->pincode = $addressComponents['postcode'];
-            }
-            if (isset($responseData['results'][0]['formatted'])) {
-                $booking->address = $responseData['results'][0]['formatted'];
-            }
-            $booking->city = $addressComponents['city'] ?? null;
-            $booking->state = $addressComponents['state'] ?? null;
-            $booking->country = $addressComponents['country'] ?? null;
-        }
-
-        $booking->drop_us_location = $request->drop_us_location;
-        $booking->booking_status = 1;
-        $booking->booking_amount = $request->booking_amount;
-        $booking->note = $request->note;
-        $booking->seater = $request->seater;
-        $booking->booking_percentage = Global_helper::companyDetails()->booking_percentage;
-        $booking->booking_tax = Global_helper::companyDetails()->booking_tax;
-        $booking->booking_post_percentage = Global_helper::companyDetails()->booking_post_percentage;
-        $booking->booking_post_tds = Global_helper::companyDetails()->booking_post_tds;
-        $booking->save();
-        DB::table('tbl_booking_log')->insert(['user_id' => $request->user->id, 'booking_id' => $booking->id, 'booking_type' => 1]);
-        if ($booking) {
-            return response()->json(['status' => 'OK', 'message' => 'Booking created successfully'], 200);
-        } else {
-            return response()->json(['status' => 'Error', 'message' => 'Failed to create booking'],401);
-        }
+        $booking->captain_id = $request->captain_id;
+        $booking->vehicle_id = $request->vehicle_id;
+        $booking->vehicle_title = $request->vehicle_title;
+        $booking->vehicle_image = $request->vehicle_image;
+        $booking->vehicle_kilo_meter = $request->vehicle_kilo_meter;
+        $booking->vehicle_extra_charges = $request->vehicle_extra_charges;
+        $booking->vehicle_seater = $request->vehicle_seater;
+        $booking->trip_distance_km = $request->trip_distance_km;
+        $booking->rate_per_km = $request->rate_per_km;
+        $booking->calculated_fare = $request->calculated_fare;
+        $booking->captain_distance_text = $request->captain_distance_text;
+        $booking->captain_duration_text = $request->captain_duration_text;
+        $booking->trip_distance_text = $request->trip_distance_text;
+        $booking->trip_distance_value = $request->trip_distance_value;
+        $booking->trip_duration_text = $request->trip_duration_text;
+        $booking->trip_duration_value = $request->trip_duration_value;
+        $booking->current_lat = $request->current_lat;
+        $booking->current_lng = $request->current_lng;
+        $booking->current_address = $request->current_address;
+        $booking->drop_lat = $request->drop_lat;
+        $booking->drop_lng = $request->drop_lng;
+        $booking->drop_address = $request->drop_address;
+        $booking->otp = rand(1000, 9999);
+        $booking->save(); // Save to DB
+        // Add booking log
+        DB::table('tbl_booking_log')->insert([
+            'user_id' => $request->user->id,
+            'booking_id' => $booking->id,
+            'booking_type' => 1
+        ]);
+        return response()->json(['status' => 'OK', 'message' => 'Booking created successfully','data'=>$booking], 200);
     }
+
 
     public function fetch_booking(Request $request)
     {
-        // Ensure user exists in request
+
         if (!$request->user) {
             return response()->json(['status' => 'Error', 'message' => 'User not authenticated'], 401);
         }
         $user_id = $request->user->id;
         $get_user = User::find($user_id);
-
         if (!$get_user) {
             return response()->json(['status' => 'Error', 'message' => 'User not found'], 404);
         }
-
-        $get_booking = Booking::query()
-            ->where(function ($query) use ($user_id) {
-                $query->where('booking_status', 1)
-                    ->where('status', 1)
-                    ->where('user_id', '!=', $user_id)->where('pick_up_date', '>=', date('Y-m-d'))
-                    ->orWhere(function ($subQuery) {
-                        $subQuery->where('booking_status', 4)
-                            ->where('status', 1);
-                    });
-            });
-
-        // Add user-related filters
-        $get_booking->where(function ($query) use ($get_user) {
-            if ($get_user->state) {
-                $query->orWhere('address', 'LIKE', '%' . $get_user->state . '%')
-                    ->orWhere('pick_up_location', 'LIKE', '%' . $get_user->state . '%');
-            }
-            if ($get_user->city) {
-                $query->orWhere('address', 'LIKE', '%' . $get_user->city . '%')
-                    ->orWhere('pick_up_location', 'LIKE', '%' . $get_user->city . '%');
-            }
-            if ($get_user->pincode) {
-                $query->orWhere('address', 'LIKE', '%' . $get_user->pincode . '%')
-                    ->orWhere('pick_up_location', 'LIKE', '%' . $get_user->pincode . '%');
-            }
-            if ($get_user->address) {
-                $query->orWhere('address', 'LIKE', '%' . $get_user->address . '%')
-                    ->orWhere('pick_up_location', 'LIKE', '%' . $get_user->address . '%');
-            }
-        });
-
-        $bookings = $get_booking->get();
-        return response()->json(['status' => 'OK', 'message' => 'Booking fetched successfully', 'data' => $bookings], 200);
+        $get_booking = DB::table('tbl_booking')->where('captain_id', $user_id)->where('booking_status', 1)->get();
+        return response()->json(['status' => 'OK', 'message' => 'Booking fetched successfully', 'data' => $get_booking], 200);
     }
 
     public function accept_booking(Request $request ,$booking_id)

@@ -32,8 +32,12 @@ Route::middleware(['jwt'])->group(function () {
     // Booking Route
     Route::post('user/create-booking', [ApiController::class, 'create_booking']);
     Route::post('user/get-booking-vehicle', [ApiController::class, 'get_booking_vehicle']);
+    Route::post('user/get-single-booking-vehicle/{id}', [ApiController::class, 'get_single_booking_vehicle']);
     Route::post('user/get-suggestion', [ApiController::class, 'get_suggestion']);
     Route::get('user/fetch-booking', [ApiController::class, 'fetch_booking']);
+    Route::get('user/fetch-booking-user/{id}', [ApiController::class, 'fetch_booking_user']);
+    Route::post('user/activate-booking/{id}', [ApiController::class, 'activate_booking']);
+    Route::post('user/update-booking-status/{id}', [ApiController::class, 'update_booking_status']);
     Route::get('user/accept-booking/{id}', [ApiController::class, 'accept_booking']);
     Route::get('user/cancel-booking/{id}', [ApiController::class, 'cancel_booking']);
     Route::get('user/complete-booking/{id}', [ApiController::class, 'complete_booking']);

@@ -441,7 +441,7 @@ class AuthController extends Controller
     }
     public function update_profile(Request $request)
     {
-
+         $formattedAddress = "";
         if (!empty($request->lat) && !empty($request->long)) {
             $apiKey = env('GOOGLE_MAPS_API');
             $lat = $request->lat;
@@ -449,8 +449,9 @@ class AuthController extends Controller
             $url = "https://maps.googleapis.com/maps/api/geocode/json?latlng={$lat},{$lng}&key={$apiKey}";
             $response = file_get_contents($url);
             $responseData = json_decode($response, true);
-            $formattedAddress = "";
+
             if (!empty($responseData['results'])) {
+
                 // Get the formatted address
                 $formattedAddress = $responseData['results'][0]['formatted_address'];
 
@@ -459,7 +460,6 @@ class AuthController extends Controller
                 // ]);
             }
         }
-
         // if (!empty($request->lat) && !empty($request->long)) {
         //     $apiKey = '9d52cf15543e4b1d9517f51ba60e6961';
         //     $url = "https://api.opencagedata.com/geocode/v1/json?q={$request->lat}+{$request->long}&key={$apiKey}";

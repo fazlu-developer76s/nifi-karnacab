@@ -211,6 +211,7 @@ class ApiController extends Controller
 
     public function get_booking_vehicle(Request $request)
     {
+
         $rules = [
             'current_address'  => 'required',
             'drop_address'     => 'required',
@@ -257,6 +258,7 @@ class ApiController extends Controller
             return response()->json(['status' => false, 'message' => 'Invalid drop address'], 400);
         }
         $dropState = null;
+
         foreach ($dropData['results'][0]['address_components'] as $component) {
             if (in_array('administrative_area_level_1', $component['types'])) {
                 $dropState = $component['long_name'];
@@ -320,6 +322,130 @@ class ApiController extends Controller
     }
 
 
+    public function get_single_booking_vehicle(Request $request, $id)
+    {
+        $apiKey = env('GOOGLE_MAPS_API');
+        $get_radius = Global_helper::companyDetails()->radius;
+
+        // Step 1: Get current location (lat/lng) from current_address
+        $currentResponse = Http::get("https://maps.googleapis.com/maps/api/geocode/json", [
+            'address' => $request->current_address,
+            'key'     => $apiKey
+        ]);
+
+        $currentData = $currentResponse->json();
+        if (empty($currentData['results'][0])) {
+            return response()->json(['status' => false, 'message' => 'Invalid current address'], 400);
+        }
+
+        $getCurrent = $currentData['results'][0]['geometry']['location'];
+
+        // Step 2: Get Captains/Vehicles within radius
+        $captains = $this->getCaptainsInRadius(
+            $getCurrent['lat'],
+            $getCurrent['lng'],
+            $get_radius,
+            $id // vehicle_type passed here
+        );
+
+        if (empty($captains) || empty($captains[0]->captain)) {
+            return response()->json(['status' => false, 'message' => 'No nearby captains found'], 404);
+        }
+
+        // Step 3: Get drop location lat/lng from drop_address
+        $dropResponse = Http::get("https://maps.googleapis.com/maps/api/geocode/json", [
+            'address' => $request->drop_address,
+            'key'     => $apiKey
+        ]);
+
+        $dropData = $dropResponse->json();
+        if (empty($dropData['results'][0])) {
+            return response()->json(['status' => false, 'message' => 'Invalid drop address'], 400);
+        }
+
+        $dropLocation = $dropData['results'][0]['geometry']['location'];
+
+        // Step 4: Get trip distance/duration from current to drop
+        $matrixResponse = Http::get("https://maps.googleapis.com/maps/api/distancematrix/json", [
+            'origins'      => $request->current_address,
+            'destinations' => $request->drop_address,
+            'key'          => $apiKey
+        ]);
+
+        $matrixData = $matrixResponse->json();
+        if (
+            $matrixData['status'] !== 'OK' ||
+            $matrixData['rows'][0]['elements'][0]['status'] === 'ZERO_RESULTS'
+        ) {
+            return response()->json(['status' => false, 'message' => 'Could not calculate route distance.'], 400);
+        }
+
+        $tripDuration = $matrixData['rows'][0]['elements'][0];
+
+        // Step 5: Loop through captains and calculate distance from current location
+        $captainList = [];
+        foreach ($captains[0]->captain as $capt) {
+
+
+            $distanceResponse = Http::get("https://maps.googleapis.com/maps/api/distancematrix/json", [
+                'origins'      => "{$getCurrent['lat']},{$getCurrent['lng']}",
+                'destinations' => "{$capt->lat},{$capt->long}",
+                'key'          => $apiKey
+            ]);
+
+            $distData = $distanceResponse->json();
+            if (
+                empty($distData['rows'][0]['elements'][0]['status']) ||
+                $distData['rows'][0]['elements'][0]['status'] !== 'OK'
+            ) {
+                continue; // skip if distance can't be calculated
+            }
+
+            $captainDistance = $distData['rows'][0]['elements'][0];
+
+            // Step 6: Calculate fare
+            $tripDistanceInKm = 0;
+            if (isset($tripDuration['distance']['text'])) {
+                $distanceText = $tripDuration['distance']['text']; // e.g., "12.4 km"
+                $tripDistanceInKm = floatval(str_replace(['km', 'Kms', 'KM', ','], '', $distanceText));
+            }
+
+            $kiloRate = $captains[0]->kilo_meter ?? 0;
+            $extraCharges = $captains[0]->extra_charges ?? 0;
+
+            $totalFare = ($tripDistanceInKm * $kiloRate) + ($tripDistanceInKm * $extraCharges);
+
+            // Step 7: Add data to list
+            $captainList[] = [
+                'captain_info'         => $capt,
+                'vehicle_info'         => [
+                    'vehicle_id'     => $captains[0]->id,
+                    'vehicle_name'   => $captains[0]->title ?? '',
+                    'vehicle_seater'   => $captains[0]->seater ?? '',
+                    'vehicle_image'   => $captains[0]->image ?? '',
+                    'rate_per_km'    => $kiloRate,
+                    'extra_charges'  => $extraCharges
+                ],
+                'fare_details'         => [
+                    'trip_distance_km' => $tripDistanceInKm,
+                    'calculated_fare'  => round($totalFare, 2),
+                ],
+                'trip_to_drop'         => $tripDuration,
+                'captain_distance'     => $captainDistance,
+                'destination_lat_lng'  => $dropLocation,
+                'current_lat_lng'      => $getCurrent,
+            ];
+        }
+
+        return response()->json([
+            'status'  => 'OK',
+            'message' => 'Nearby vehicle fetched successfully',
+            'data'    => $captainList
+        ]);
+    }
+
+
+
 
 
 
@@ -328,7 +454,11 @@ class ApiController extends Controller
 
 
 
-        $get_vehicle = DB::table('tbl_vehicle')->where('status', 1)->get();
+        $get_vehicle_query = DB::table('tbl_vehicle')->where('status', 1);
+        if ($vehicle_type) {
+            $get_vehicle_query->where('id', $vehicle_type);
+        }
+        $get_vehicle = $get_vehicle_query->get();
         $new_data = [];
         foreach($get_vehicle as $row){
             $captains = DB::table('users')
@@ -403,29 +533,114 @@ class ApiController extends Controller
         $booking->drop_address = $request->drop_address;
         $booking->otp = rand(1000, 9999);
         $booking->save(); // Save to DB
-        // Add booking log
-        DB::table('tbl_booking_log')->insert([
-            'user_id' => $request->user->id,
-            'booking_id' => $booking->id,
-            'booking_type' => 1
-        ]);
+        $get_data = $this->get_single_booking_vehicle($request, $request->vehicle_id);
+        $responseData = $get_data->getData();
+        $new_data = $responseData->data;
+        foreach($new_data as $row){
+            DB::table('tbl_booking_log')->insert([
+                'captain_id' => $row->captain_info->id,
+                'booking_id' => $booking->id,
+                'user_id'    => $request->user->id,
+                'booking_type' => 1,
+            ]);
+        }
         return response()->json(['status' => 'OK', 'message' => 'Booking created successfully','data'=>$booking], 200);
     }
 
 
     public function fetch_booking(Request $request)
     {
+        $get_booking_log = DB::table('tbl_booking_log')->where('captain_id',$request->user->id)->where('booking_type', 1)->where('status',1)->get();
+        $new_data = [];
+        foreach($get_booking_log as $row){
+            $get_booking = DB::table('tbl_booking')->where('id',$row->booking_id)->first();
+            $row->booking = $get_booking;
+            $new_data[] = $row;
+        }
+        // dd($get_booking_log);
+        // $get_booking_log = DB::table('tbl_booking_log as a')->leftJoin('tbl_booking as b','a.booking_id','=','b.id')->select('b.*','a.booking_type as  booking_status_tbl_log')->where('a.captain_id', $request->user->id)->where('a.booking_type', 1)->get();
+        return response()->json(['status' => 'OK', 'message' => 'Booking fetched successfully', 'data' => $new_data], 200);
+    }
 
-        if (!$request->user) {
-            return response()->json(['status' => 'Error', 'message' => 'User not authenticated'], 401);
+
+    public function fetch_booking_user(Request $request ,$id){
+        $get_booking = DB::table('tbl_booking')->where('id',$id)->first();
+        if($get_booking->booking_status == 2){
+            $get_booking->captain_info = DB::table('users')->where('id',$get_booking->captain_id)->first();
         }
-        $user_id = $request->user->id;
-        $get_user = User::find($user_id);
-        if (!$get_user) {
-            return response()->json(['status' => 'Error', 'message' => 'User not found'], 404);
+        if($get_booking){
+            return response()->json(['status' => 'OK', 'message' => 'Booking fetched successfully', 'data' => $get_booking], 200);
+        }else{
+            return response()->json(['status' => 'Error', 'message' => 'Booking not found'], 404);
         }
-        $get_booking = DB::table('tbl_booking')->where('captain_id', $user_id)->where('booking_status', 1)->get();
-        return response()->json(['status' => 'OK', 'message' => 'Booking fetched successfully', 'data' => $get_booking], 200);
+    }
+
+    public function activate_booking(Request $request , $id){
+
+        $get_booking = DB::table('tbl_booking')->where('id',$id)->where('captain_id',$request->user->id)->where('otp',$request->otp)->first();
+        if(!$get_booking){
+            return response()->json(['status' => 'Error', 'message' => 'Invalid OTP'], 401);
+        }
+        if($get_booking->booking_status == 2){
+            DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 3] );
+            DB::table('tbl_booking_log')->where('captain_id', $request->user->id )->where('booking_id',$id)->update(['status' => 2]);
+            DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 3]);
+            return response()->json(['status' => 'OK', 'message' => 'Booking activated successfully'], 200);
+        }else{
+            return response()->json(['status' => 'Error', 'message' => 'Booking not found'], 404);
+        }
+    }
+
+    public function update_booking_status(Request $request ,$id){
+
+        // accept booking for captain
+        if($request->booking_status == 2){
+            $get_booking = Booking::where('id', $id)->first();
+            if($get_booking->booking_status != 1){
+                return response()->json(['status' => 'Error','message' => 'Booking status is not accepted'], 401);
+            }
+            DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 2 , 'captain_id'=> $request->user->id] );
+            DB::table('tbl_booking_log')->where('captain_id', $request->user->id )->where('booking_id',$id)->update(['status' => 2]);
+            DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 2]);
+            return response()->json(['status' => 'OK', 'message' => 'Booking Accepted successfully'], 200);
+        }
+
+        // captain side cancel booking
+        if($request->booking_status == 5 && $request->user->role_id == 2){
+            $get_booking = Booking::where('id', $id)->first();
+            if($get_booking->booking_status != 1){
+                return response()->json(['status' => 'Error','message' => 'Booking status is not accepted'], 401);
+            }
+            DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 5 , 'captain_id'=> $request->user->id] );
+            DB::table('tbl_booking_log')->where('captain_id', $request->user->id )->where('booking_id',$id)->update(['status' => 2]);
+            DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 5]);
+            return response()->json(['status' => 'OK', 'message' => 'Booking Cancel successfully'], 200);
+        }
+
+        // user side cancel booking
+        if($request->booking_status == 5 && $request->user->role_id == 3){
+            $get_booking = Booking::where('id', $id)->first();
+            if($get_booking->booking_status != 1){
+                return response()->json(['status' => 'Error','message' => 'Booking status is not accepted'], 401);
+            }
+            DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 5 ] );
+            DB::table('tbl_booking_log')->where('user_id', $request->user->id )->where('booking_id',$id)->update(['status' => 2]);
+            DB::table('tbl_booking_log')->insert(['user_id' => $request->user->id, 'booking_id' => $id, 'booking_type' => 5]);
+            return response()->json(['status' => 'OK', 'message' => 'Booking Cancel successfully'], 200);
+        }
+
+        // captain side complete booking
+        if($request->booking_status == 4){
+            $get_booking = Booking::where('id', $id)->first();
+            if($get_booking->booking_status != 1){
+                return response()->json(['status' => 'Error','message' => 'Booking status is not accepted'], 401);
+            }
+            DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 4] );
+            DB::table('tbl_booking_log')->where('captain_id', $request->user->id )->where('booking_id',$id)->update(['status' => 2]);
+            DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 4]);
+            return response()->json(['status' => 'OK', 'message' => 'Booking Accepted successfully'], 200);
+        }
+
     }
 
     public function accept_booking(Request $request ,$booking_id)
@@ -563,7 +778,7 @@ private function updateWalletsAndLogs($userId, $bookingId, $adminAmount, $postUs
         if($id == 1){
             $query->where('user_id', $request->user->id);
         }else{
-            $query->where('accept_user_id', $request->user->id);
+            $query->where('captain_id', $request->user->id);
         }
         $booking = $query->get();
         if($booking){

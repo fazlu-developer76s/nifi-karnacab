@@ -62,6 +62,7 @@ Route::middleware(['jwt'])->group(function () {
     Route::delete('user/delete-address/{id}', [ApiController::class, 'delete_address']);
 
     Route::get('user/pages/{title}',[ApiController::class, 'get_pages']);
+    Route::get('user/pages',[ApiController::class, 'get_pages_all']);
 
     // vehcile routes
     Route::get('user/get-vehicle-captain', [ApiPropertyController::class, 'vehicle_captain']);

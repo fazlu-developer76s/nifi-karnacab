@@ -259,6 +259,21 @@
                             <div class="menu-text">Term & Condition</div>
                         </a>
                     </div>
+                     <div class="menu-item">
+                        <a href="{{ route('pages.edit', 4) }}" class="menu-link ">
+                            <div class="menu-text">About Us</div>
+                        </a>
+                    </div>
+                     <div class="menu-item">
+                        <a href="{{ route('pages.edit', 5) }}" class="menu-link ">
+                            <div class="menu-text">Return & Refund</div>
+                        </a>
+                    </div>
+                     <div class="menu-item">
+                        <a href="{{ route('pages.edit', 6) }}" class="menu-link ">
+                            <div class="menu-text">Software Liesence</div>
+                        </a>
+                    </div>
                     <div class="menu-item">
                         <a href="{{ route('pages.edit', 2) }}" class="menu-link ">
                             <div class="menu-text">Privacy Policy</div>

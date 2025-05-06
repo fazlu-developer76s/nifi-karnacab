@@ -136,6 +136,18 @@ class ApiController extends Controller
             return response()->json(['status' => 'Error', 'data' => 'Page not found.'], 404);
         }
     }
+    
+    public function get_pages_all(Request $request)
+    {
+        $page = Page::get();
+        if ($page) {
+            return response()->json(['status' => 'OK', 'data' => $page], 200);
+        } else {
+            return response()->json(['status' => 'Error', 'data' => 'Page not found.'], 404);
+        }
+    }
+    
+    
 
     public function get_vehicle(Request $request)
     {

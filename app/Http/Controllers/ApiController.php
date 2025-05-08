@@ -126,7 +126,24 @@ class ApiController extends Controller
             return response()->json(['status' => 'Error', 'message' => 'Failed to delete address.'], 500);
         }
     }
+    public function uploadImage(Request $request)
+    {
+        // Validate the uploaded file
+        $request->validate([
+            'image' => 'required|image|max:2048',
+        ]);
 
+        // Store the image in the 'public/images' directory
+        $path = $request->file('image')->store('images', 'public');
+
+        // Generate the full URL to the image
+        $url = asset('storage/' . $path);
+
+        return response()->json([
+            'success' => true,
+            'url' => $url,
+        ]);
+    }
     public function get_pages(Request $request, $title)
     {
         $page = Page::where('page_name', $title)->first();
@@ -136,7 +153,7 @@ class ApiController extends Controller
             return response()->json(['status' => 'Error', 'data' => 'Page not found.'], 404);
         }
     }
-    
+
     public function get_pages_all(Request $request)
     {
         $page = Page::get();
@@ -146,8 +163,8 @@ class ApiController extends Controller
             return response()->json(['status' => 'Error', 'data' => 'Page not found.'], 404);
         }
     }
-    
-    
+
+
 
     public function get_vehicle(Request $request)
     {

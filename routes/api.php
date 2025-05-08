@@ -26,7 +26,7 @@ Route::get('get-city/{id}', [ApiController::class, 'get_city']);
 Route::get('get-vehicle', [ApiController::class, 'get_vehicle']);
 Route::get('pages/{title}',[ApiController::class, 'get_pages']);
 Route::middleware(['jwt'])->group(function () {
-
+    Route::post('user/image-upload', [ApiController::class, 'uploadImage']);
     Route::post('user/update-profile', [AuthController::class, 'update_profile']);
     Route::get('user/get-state', [ApiController::class, 'get_state']);
 

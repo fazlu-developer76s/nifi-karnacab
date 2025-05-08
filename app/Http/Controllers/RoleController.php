@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
+use App\Models\Page;
 use App\Models\Permission;
 use DB;
 use App\Models\Roles;
@@ -18,6 +19,14 @@ class RoleController extends Controller
         $title = 'Roles';
         $get_role = Roles::where('status', '!=', 3)->where('id', '!=', 1)->orderBy('id', 'desc')->get();
         return view('roles.index', compact('title', 'get_role'));
+    }
+
+    public function get_pages(Request  $request , $title )
+    {
+
+        $page = Page::where('page_name', $title)->first();
+        $title = $page->title;
+        return view('roles.policy', compact('title', 'page'));
     }
 
     public function store_roles(Request $request)
@@ -179,9 +188,9 @@ public function update_permission(Request $request)
             return response()->json(['status' => false]);
         }
     }
-    
+
     public function user_verified(Request $request){
-        
+
         $table_name = $request->table_name;
         $id = $request->id;
         $status = $request->status;

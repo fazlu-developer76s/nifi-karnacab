@@ -28,7 +28,7 @@ use App\Http\Controllers\PermissionsubCategory;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\UnsubscribeController;
-
+Route::get('pages/{title}',[RoleController::class, 'get_pages']);
 Route::get('/', function () {
     return view('auth.login');
 });

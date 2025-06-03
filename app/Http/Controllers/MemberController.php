@@ -9,33 +9,16 @@ use App\Models\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Svg\Tag\Rect;
 
 class MemberController extends Controller
 {
 
     public function index()
     {
+
         $title = "Member List";
-        $allmember = DB::table('users')->leftJoin('roles', 'roles.id', '=', 'users.role_id')->where('users.role_id', '!=', 1)->where('users.status', '!=', 3)->select('users.*', 'roles.title')->orderBy('users.id', 'desc')->get();
+        $allmember = DB::table('users')->leftJoin('roles', 'roles.id', '=', 'users.role_id')->where('users.role_id', '!=' ,  1)->where('users.status', '!=', 3)->select('users.*', 'roles.title')->get();
         return view('member.index', compact('title', 'allmember'));
-    }
-
-    public function approved_index()
-    {
-
-        $title = "Member List";
-        $allmember = DB::table('users')->leftJoin('roles', 'roles.id', '=', 'users.role_id')->where('roles.id', 2)->where('users.is_user_verified', 1)->where('users.role_id', '!=', 1)->where('users.status', '!=', 3)->select('users.*', 'roles.title')->get();
-        return view('member.index', compact('title', 'allmember'));
-    }
-
-    public function pending_index()
-    {
-
-        $title = "Member List";
-        $is_user = 1;
-        $allmember = DB::table('users')->leftJoin('roles', 'roles.id', '=', 'users.role_id')->where('roles.id', 2)->where('users.is_user_verified', 2)->where('users.role_id', '!=', 1)->where('users.status', '!=', 3)->select('users.*', 'roles.title')->get();
-        return view('member.index', compact('title', 'allmember', 'is_user'));
     }
 
     public function member_kyc(Request $request)
@@ -48,6 +31,7 @@ class MemberController extends Controller
             ->join('roles', 'roles.id', '=', 'users.role_id')
             ->where('users.status', 1)
             ->where('roles.status', 1)
+            ->where('users.role_id',3)
             ->select(
                 'users.name as user_name',
                 'users.email as email',
@@ -64,7 +48,7 @@ class MemberController extends Controller
         if ($request->filled('from_date') && $request->filled('to_date')) {
             $query->where(function ($query) use ($request) {
                 $query->where('kyc_processes.created_at', '>=', $request->input('from_date'))
-                    ->where('kyc_processes.created_at', '<=', $request->input('to_date'));
+                      ->where('kyc_processes.created_at', '<=', $request->input('to_date'));
             });
         }
 
@@ -96,7 +80,6 @@ class MemberController extends Controller
             $request->validate([
                 'name' => 'required|string|max:255',
                 'role_id' => 'required',
-                // 'gst_no' => 'required',
                 'email' => [
                     'required',
                     'email',
@@ -106,12 +89,16 @@ class MemberController extends Controller
                     'required',
                     'regex:/^[6-9]\d{9}$/'
                 ],
-                'status' => 'required',
-                // 'password' => [
+                // 'aadhar_no' => [
                 //     'required',
-                //     'string',
-
+                //     'regex:/^\d{12}$/'
                 // ],
+                'status' => 'required',
+                'password' => [
+                    'required',
+                    'string',
+
+                ],
             ]);
             $check_data =  $this->check_exist_data($request, null);
             if (!empty($check_data)) {
@@ -121,6 +108,9 @@ class MemberController extends Controller
                 if ($check_data->mobile_no == $request->mobile_no) {
                     $message = "Mobile No.";
                 }
+                if ($check_data->aadhar_no == $request->aadhar_no) {
+                    $message = "Aadhar No.";
+                }
                 if ($check_data) {
                     return redirect()->route('member.create')->with('error', '' . $message . ' Already Exists');
                 }
@@ -128,19 +118,19 @@ class MemberController extends Controller
             $member = new Member();
             $member->name = $request->name;
             $member->role_id = $request->role_id;
-
             $member->email = $request->email;
             $member->mobile_no = $request->mobile_no;
+            // $member->employe_type = $request->employe_type;
+            // $member->aadhar_no = $request->aadhar_no;
             $member->status = $request->status;
             $member->password = Hash::make($request->password);
-
             $member->save();
             $insert_id = $member->id;
             return redirect()->route('member')->with('success', 'Member Added Successfully');
         }
 
         $title = "Add Member";
-        $get_role = Roles::where('status', 1)->where('id', '!=', 1)->get();
+        $get_role = Roles::where('status', 1)->where('id', 2)->get();
         return view('member.create', compact('title', 'get_role'));
     }
 
@@ -148,25 +138,17 @@ class MemberController extends Controller
     {
         $title = "Edit Member";
         $get_member = Member::where('status', '!=', 3)->where('role_id', '!=', 1)->where('id', $id)->first();
-        if ($get_member->role_id == 2) {
-            $get_role = Roles::where('status', 1)->where('id', 2)->get();
-        } else {
-            $get_role = Roles::where('status', 1)->where('id', '!=', 2)->where('id', '!=', 1)->get();
-        }
+        $get_role = Roles::where('status', 1)->where('id', 2)->get();
         return view('member.create', compact('title', 'get_member', 'get_role',));
     }
 
     public function view($id)
     {
         $title = "Edit Member";
-        $get_user = DB::table('users as a')
-            ->leftJoin('tbl_vehicle_image as b', 'a.id', '=', 'b.user_id')
-            ->select('a.*', 'b.image as sub_image', 'b.type as image_type')
-            ->where('a.id', $id)
-            ->where('a.status', '!=', 3)
-            ->get();
-            // dd($get_user);
-        return view('member.view', compact('title', 'get_user'));
+        $running_loan = DB::table('users')->leftJoin('loans', 'users.id', '=', 'loans.user_id')->select('users.name as username', 'users.aadhar_no as user_aadhar_no', 'users.mobile_no as user_mobile_no', 'loans.*')->where('users.id', $id)->where('users.status', 1)->where('loans.status', 1)->where('loans.loan_status', 3)->get();
+        $close_loan = DB::table('users')->leftJoin('loans', 'users.id', '=', 'loans.user_id')->select('users.name as username', 'users.aadhar_no as user_aadhar_no', 'users.mobile_no as user_mobile_no', 'loans.*')->where('users.id', $id)->where('users.status', 1)->where('loans.status', 1)->where('loans.loan_status', 5)->get();
+        $all_loan = DB::table('users')->leftJoin('loans', 'users.id', '=', 'loans.user_id')->select('users.name as username', 'users.aadhar_no as user_aadhar_no', 'users.mobile_no as user_mobile_no', 'loans.*')->where('users.id', $id)->where('users.status', 1)->where('loans.status', 1)->get();
+        return view('member.view', compact('title', 'running_loan', 'close_loan', 'all_loan'));
     }
 
     public function update(Request $request)
@@ -184,6 +166,10 @@ class MemberController extends Controller
                 'required',
                 'regex:/^[6-9]\d{9}$/'
             ],
+            // 'aadhar_no' => [
+            //     'required',
+            //     'regex:/^\d{12}$/'
+            // ],
             'status' => 'required',
         ]);
 
@@ -200,6 +186,9 @@ class MemberController extends Controller
             if ($check_data->mobile_no == $request->mobile_no) {
                 $message .= "Mobile No. ";
             }
+            if ($check_data->aadhar_no == $request->aadhar_no) {
+                $message .= "Aadhar No. ";
+            }
 
             // Redirect back with an error message if any data exists
             if ($message) {
@@ -214,31 +203,14 @@ class MemberController extends Controller
         $member->role_id = $request->role_id;
         $member->email = $request->email;
         $member->mobile_no = $request->mobile_no;
+        // $member->employe_type = $request->employe_type;
+        // $member->aadhar_no = $request->aadhar_no;
         $member->status = $request->status;
-        if ($request->gst_no) {
-        }
         $member->save(); // Use save() to persist the changes
 
         // Redirect to the member list with a success message
         return redirect()->route('member')->with('success', 'Member Updated Successfully');
     }
-
-    public function update_userstatus(Request $request)
-    {
-        // Validate request data
-        $request->validate([
-            'user_id' => 'required',
-            'user_status' => 'required',
-        ]);
-
-        // Update user verification status
-        DB::table('users')->where('id', $request->user_id)->update(['is_user_verified' => $request->user_status]);
-
-        // Redirect with success message
-        return redirect()->route('member.view', ['id' => $request->user_id])
-                         ->with('success', 'Member Updated Successfully');
-    }
-
 
 
     public function destroy($id)
@@ -247,7 +219,7 @@ class MemberController extends Controller
         // $member = Member::findOrFail($id);
         // $member->status = 3;
         // $member->update();
-        DB::table('users')->where('id',$id)->delete();
+        $member_delete = DB::table('users')->where('id',$id)->delete();
         return redirect()->route('member')->with('success', 'Member deleted successfully.');
     }
 
@@ -261,6 +233,7 @@ class MemberController extends Controller
         $check_member = $query->where(function ($q) use ($request) {
             $q->where('email', $request->email)
                 ->orWhere('mobile_no', $request->mobile_no);
+                // ->orWhere('aadhar_no', $request->aadhar_no);
         })->first();
 
         return $check_member;

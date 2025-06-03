@@ -7,12 +7,10 @@ use Illuminate\Http\Request;
 use App\Models\Loan_request;
 use App\Models\Member;
 use App\Helpers\Global_helper as GlobalHelper;
-use App\Models\Booking;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Ui\Presets\React;
 use App\Models\Providers;
 use App\Models\Route;
-use App\Models\User;
 
 class LeadController extends Controller
 {
@@ -114,17 +112,19 @@ class LeadController extends Controller
 
     public function view($id)
     {
-        $title = 'View Booking';
-        $get_booking = DB::table('tbl_booking')->where('status', '!=' , 3)->where('id',$id)->get();
-        $bookings = [];
-        foreach ($get_booking as $booking){
-            $booking->post_user = DB::table('users')->where('id', $booking->user_id)->first();
-            $booking->accept_user = DB::table('users')->where('id', $booking->accept_user_id)->first();
-            $booking->statement = DB::table('tbl_statement as a')->leftJoin('users as b','a.user_id','=','b.id')->select('a.*','b.name as user_name')->where('a.booking_id',$booking->id)->get();
-            $booking->booking_log = DB::table('tbl_booking_log as a')->leftJoin('users as b' , 'a.user_id','=','b.id')->select('a.*','b.name as user_name')->where('booking_id',$booking->id)->get();
-            $bookings[] = $booking;
+        $get_route = Route::where('status', 1)->get();
+        $user_id = Auth::user()->id;
+        $get_note = DB::table('notes')->where('loan_request_id', $id)->where('title', 'View Lead')->where('user_id', $user_id)->first();
+
+        if (!$get_note) {
+            DB::table('notes')->insert(['loan_request_id' => $id, 'user_id' => $user_id, 'loan_status' => 2, 'title' => "View Lead"]);
+            Loan_request::where('id', $id)->update(['loan_status' => 2]);
         }
-        return view('lead.view', compact('title', 'bookings'));
+        $title = "View Lead";
+        $get_lead_1 = Loan_request::where('status', '!=', 3)->where('id', $id)->first();
+        $get_user = Member::where('status', 1)->where('id', $get_lead_1->user_id)->first();
+        $get_lead = DB::table('loan_requests')->leftJoin('users', 'loan_requests.user_id', '=', 'users.id')->leftJoin('providers', 'providers.id', '=', 'loan_requests.service_no')->select('loan_requests.*', 'users.name as username', 'providers.title as service_name')->where('loan_requests.status', '!=', '3')->where('loan_requests.loan_status', '!=', 5)->where('loan_requests.id', $id)->orderBy('loan_requests.id', 'desc')->first();
+        return view('lead.view', compact('title', 'get_lead', 'get_user','get_route'));
     }
 
     public function kyclead_view($id)
@@ -176,6 +176,10 @@ class LeadController extends Controller
 
     public function update(Request $request)
     {
+
+
+
+
 
         if ($request->loan_status == "approved") {
             $request->validate([
@@ -316,8 +320,8 @@ class LeadController extends Controller
 
     public function viewright_modal(Request $request)
     {
-
         $lead_id = $request->lead_id;
+
         // Fetching notes with users
         $notes = DB::table('notes')
             ->leftJoin('users', 'notes.user_id', '=', 'users.id')
@@ -335,54 +339,39 @@ class LeadController extends Controller
                 // Switch for loan status
                 switch ($note->loan_status) {
                     case 1:
-                        $loan_status = "Initial Stage";
+                        $loan_status = "Pending";
                         $class = "warning";
                         $added_by = "Created By";
                         break;
                     case 2:
-                        $loan_status = "Follow up / Team Call";
+                        $loan_status = "View";
                         $class = "primary";
-                        $added_by = "Team Call By";
+                        $added_by = "Viewed By";
                         break;
                     case 3:
-                        $loan_status = "Follow up / Call Disconnected";
+                        $loan_status = "Under Discussion";
                         $class = "secondary";
-                        $added_by = "Call Disconnected By";
+                        $added_by = "Discussion By";
                         break;
                     case 4:
-                        $loan_status = "Follow up / Ringing ";
-                        $class = "warning";
-                        $added_by = "Ringing  By";
+                        $loan_status = "Pending KYC";
+                        $class = "danger";
+                        $added_by = "Discussion By";
                         break;
                     case 5:
-                        $loan_status = "Pipeline ";
+                        $loan_status = "Qualified";
+                        $added_by = "Qualified By";
                         $class = "success";
-                        $added_by = "Pipeline By";
                         break;
                     case 6:
-                        $loan_status = "Visit align";
-                        $class = "info";
-                        $added_by = "Visit align By";
-                        break;
-                    case 7:
-                        $loan_status = "Conversion";
-                        $class = "success";
-                        $added_by = "Conversion By";
-                        break;
-                    case 8:
                         $loan_status = "Rejected";
-                        $class = "danger";
                         $added_by = "Rejected By";
-                        break;
-                    case 9:
-                        $loan_status = "Lead Assign";
-                        $class = "info";
-                        $added_by = "Assign By";
+                        $class = "danger"; // Corrected typo "dangeer"
                         break;
                     default:
                         $loan_status = "Unknown";
                         $class = "light";
-                        $added_by = " ";
+                        $added_by = '';
                         break;
                 }
 
@@ -497,36 +486,6 @@ class LeadController extends Controller
                 DB::table('kyc_leads')->where('id', $request->hidden_id)->update(['kyc_status' => $request->kyc_status]);
                 return redirect()->route('kyclead.view', ['id' => $request->hidden_id])->with('success', 'kyc successfully updated');
             }
-        }
-    }
-    public function assign_lead(Request $request) {
-
-        $lead_id = $request->lead_id;
-        $current_user_id = $request->current_user_id;
-        $assign_user_id = $request->assign_user_id;
-        $insert_log = DB::table('assign_lead')->insert([
-            'lead_id' => $lead_id,
-            'current_user_id' => $current_user_id,
-            'assign_user_id' => $assign_user_id
-        ]);
-        $get_assing_user = DB::table('users')->where('id',$assign_user_id)->where('status',1)->first();
-        $insert_notes = DB::table('notes')->insert([
-            'loan_request_id' => $lead_id,
-            'user_id' => $current_user_id,
-            'loan_status' => 9,
-            'title' => 'Lead Assign To ' .$get_assing_user->name.''
-
-        ]);
-        $update_lead_status  = DB::table('enquiries')->where('id',$lead_id)->update(['loan_status'=>9]);
-        $update_user_id = DB::table('enquiries')
-        ->where('user_id', $current_user_id)
-        ->where('id', $lead_id)
-        ->update(['user_id' => $assign_user_id]);
-
-        if ($insert_log) {
-            return response()->json(['success' => true, 'message' => 'Lead assigned successfully']);
-        } else {
-            return response()->json(['success' => false, 'message' => 'Failed to assign lead']);
         }
     }
 }

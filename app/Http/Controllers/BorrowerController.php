@@ -30,7 +30,7 @@ class BorrowerController extends Controller
         ]);
        }
        $regex = '/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/';
-
+       
        if(preg_match($regex, $request->field_value))
        {
            $user_details = $this->getUserDetails($request->user->id, $request->field_value, 'email');
@@ -65,7 +65,7 @@ class BorrowerController extends Controller
                    'data' => $request->all()
                 ]);
            }
-
+           
        }
        else
        {
@@ -101,7 +101,7 @@ class BorrowerController extends Controller
        }
 
     }
-
+      
         public function getUserDetails($user_id,$field_value, $field_type)
         {
             $query = User::where('status', 1)
@@ -124,13 +124,13 @@ class BorrowerController extends Controller
                 return false;
             }
         }
-
+       
         public function update_new_email_mobile_request(Request $request)
         {
             $otp = $request->otp;
             $field_value = $request->field_value;
             $regex = '/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/';
-
+            
             $checkUser = (preg_match($regex, $field_value)) ? $this->checkUser($request->user->id, $request->field_value,2) : $this->checkUser($request->user->id, $request->field_value,1);
             if($checkUser)
             {
@@ -186,7 +186,7 @@ class BorrowerController extends Controller
                  ]);
                 }
              }
-
+              
             else
             {
                 $module_type = 2;
@@ -245,9 +245,9 @@ class BorrowerController extends Controller
             ->where('otp',$otp)
             ->orderBy('id',"desc")
             ->first();
-
+         
            return $query;
-
+          
         }
 
         public function checkUser($user_id, $field_value, $field_type)
@@ -263,7 +263,7 @@ class BorrowerController extends Controller
                  $query->where('email', $field_value);
              }
              $user = $query->first();
-
+            
              return $user;
 
             // Add condition based on the field type
@@ -316,9 +316,9 @@ class BorrowerController extends Controller
             ->where('field_value',$field_value)
             ->orderBy('id',"desc")
             ->first();
-
+         
            return $query;
-
+          
         }
 
         public function approve_update_request(Request $request)
@@ -344,14 +344,14 @@ class BorrowerController extends Controller
                                 ->where('status', 1)
                                 ->orderBy('id', "desc")
                                 ->first();
-
+                
                     if($update_request)
                     {
                         if($update_request->field_type==1)
                         {
                             $update_user_details = DB::table('users')
                             ->where('id', $user_id)
-                            ->update(['mobile_no' => $update_request->field_value]);
+                            ->update(['mobile_no' => $update_request->field_value]); 
                         }
                         else
                         {
@@ -378,7 +378,7 @@ class BorrowerController extends Controller
                                'StatusCode' => 500
                             ]);
                         }
-
+            
                     }
                 }
             }
@@ -403,7 +403,7 @@ class BorrowerController extends Controller
                     ->orderBy('a.id', 'desc')
                     ->select('a.*', 'b.name', 'b.email') // Select columns from both tables
                     ->get();
-
+                
                     if($update_requests)
                     {
                         return response()->json([
@@ -423,7 +423,7 @@ class BorrowerController extends Controller
                     }
                 }
             }
-
+         
             public function user_profile(Request $request)
             {
                 $user_id = $request->user->id;
@@ -453,7 +453,7 @@ class BorrowerController extends Controller
 
             public function user_list(Request $request)
             {
-
+                
                 if($request->user->role_id != 1)
                 {
                     return response()->json([
@@ -472,7 +472,7 @@ class BorrowerController extends Controller
                 if ($request->has('role_id')) {
                     $users->where('role_id', $request->role_id);
                 }
-
+                
                 $user_list = $users->get();
 
                 if(count($user_list)>0)
@@ -516,7 +516,7 @@ class BorrowerController extends Controller
                 $status = $request->status;
                 switch ($status)
                 {
-
+                    
                     case 1:
                         $message = 'User activated successfully';
                         break;
@@ -549,7 +549,7 @@ class BorrowerController extends Controller
                     'StatusCode' => 200
                 ], 200);
             }
-
+            
         public function route_agent_list(Request $request)
         {
             $user_id = $request->user->id;
@@ -561,10 +561,10 @@ class BorrowerController extends Controller
                     'StatusCode' => 202
                 ]);
             }
-
+            
             $get_user_route = Loan::where('user_id', $user_id)->orderBy('id', 'desc')->first();
             $route_agents = DB::table('assignroutes as a')->leftJoin("users as b","a.user_id","b.id")->select('b.*')->where('a.route_id', $get_user_route->route_id)->where('b.status',1)->where('role_id',3)->get();
-
+            
             if(count($route_agents)>0)
             {
                 return response()->json([
@@ -583,7 +583,7 @@ class BorrowerController extends Controller
         }
 
         // public function UpdateUserProfile()
-
-
-
+         
+        
+        
 }

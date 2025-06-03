@@ -400,7 +400,7 @@ class Permission
     {
         $emailapi = \App\Models\Api::where('code', "emailapi")->first();
         $header = array(
-            // 'api-key: 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',
+            'api-key: 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',
             'Content-Type: application/json'
         );
         $body = '{

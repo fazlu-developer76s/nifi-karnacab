@@ -1,838 +1,28 @@
 <?php
 
 namespace App\Http\Controllers;
-
-use Illuminate\Support\Facades\Http;
-use App\Models\Banner;
-use PDF;
-use App\Models\Blog;
-use App\Models\CategoriesModal;
-use App\Models\CmsModal;
+use Razorpay\Api\Api;
+use Illuminate\Support\Str;
 use App\Models\Kycprocess;
 use App\Models\Package;
-use App\Models\PetCategory;
+use App\Models\Page;
+use App\Models\Pets;
 use App\Models\Service;
-use App\Models\Testimonal;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use App\Mail\Enquirys;
-use App\Models\Booking;
-use App\Models\City;
-use App\Models\Enquiry;
-use App\Models\Gallary;
-use App\Models\Page;
-use App\Models\Pincode;
-use App\Models\Property;
-use App\Models\PropertyReview;
-use App\Models\Seo;
-use App\Models\State;
-use App\Helpers\Global_helper;
-use App\Models\Vehicle;
-use Illuminate\Support\Facades\Mail;
-use Svg\Tag\Rect;
+use App\Helpers\Global_helper as GlobalHelper;
+
 
 class ApiController extends Controller
 {
-
-    public function get_state(Request $request)
-    {
-        $get_state = State::where('status', 1)->get();
-        if ($get_state) {
-            return response()->json([
-                'status' => 'OK',
-                'message' => 'State Fetched Successfully',
-                'data' => $get_state
-            ], 200);
-        } else {
-            return response()->json([
-                'status' => 'error',
-                'meesage' => 'data not found'
-            ],401);
-        }
-    }
-
-    public function get_city(Request $request, $state_id)
-    {
-        $get_city = City::where('status', 1)->where('state_id', $state_id)->get();
-        if ($get_city) {
-            return response()->json([
-                'status' => 'OK',
-                'message' => 'City Fetched Successfully',
-                'data' => $get_city
-            ], 200);
-        } else {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'City not found'
-            ],401);
-        }
-    }
-
-    public function add_address(Request $request)
-    {
-
-        $rules = [
-            'type'               => 'required|string',
-            'complete_address'      => 'required|string',
-        ];
-        $validate = \Myhelper::FormValidator($rules, $request);
-        if ($validate != "no") {
-            return $validate;
-        }
-        $inserted = DB::table('tbl_address')->insert([
-            'user_id'               => $request->user->id,
-            'type'               => $request->type,
-            'complete_address'      => $request->complete_address
-        ]);
-        if ($inserted) {
-            return response()->json(['status' => 'OK', 'message' => 'Address added successfully.'], 200);
-        } else {
-            return response()->json(['status' => 'Error', 'message' => 'Failed to add address.'], 500);
-        }
-    }
-
-    public function update_address(Request $request , $id){
-        $rules = [
-            'type'               => 'required|string',
-            'complete_address'      => 'required|string',
-        ];
-        $validate = \Myhelper::FormValidator($rules, $request);
-        if ($validate != "no") {
-            return $validate;
-        }
-        $inserted = DB::table('tbl_address')->where('id',$id)->update([
-            'type'               => $request->type,
-            'complete_address'      => $request->complete_address
-        ]);
-        return response()->json(['status' => 'OK', 'message' => 'Address update successfully.'], 200);
-
-    }
-
-    public function get_address(Request $request)
-    {
-        $addresses = DB::table('tbl_address')->where('status', 1)->where('user_id',$request->user->id)->get();
-        return response()->json(['status' => 'OK', 'data' => $addresses], 200);
-    }
-
-    public function delete_address(Request $request, $id)
-    {
-        $deleted = DB::table('tbl_address')->where('id', $id)->delete();
-
-        if ($deleted) {
-            return response()->json(['status' => 'OK', 'message' => 'Address deleted successfully.'], 200);
-        } else {
-            return response()->json(['status' => 'Error', 'message' => 'Failed to delete address.'], 500);
-        }
-    }
-    public function uploadImage(Request $request)
-    {
-        // Validate the uploaded file
-        $request->validate([
-            'image' => 'required|image|max:2048',
-        ]);
-
-        // Store the image in the 'public/images' directory
-        $path = $request->file('image')->store('images', 'public');
-
-        // Generate the full URL to the image
-        $url = asset('storage/' . $path);
-
-        return response()->json([
-            'success' => true,
-            'url' => $url,
-        ]);
-    }
-    public function get_pages(Request $request, $title)
-    {
-        $page = Page::where('page_name', $title)->first();
-        if ($page) {
-            return response()->json(['status' => 'OK', 'data' => $page], 200);
-        } else {
-            return response()->json(['status' => 'Error', 'data' => 'Page not found.'], 404);
-        }
-    }
-
-    public function get_pages_all(Request $request)
-    {
-        $page = Page::get();
-        if ($page) {
-            return response()->json(['status' => 'OK', 'data' => $page], 200);
-        } else {
-            return response()->json(['status' => 'Error', 'data' => 'Page not found.'], 404);
-        }
-    }
-
-
-
-    public function get_vehicle(Request $request)
-    {
-        $get_vehicle = Vehicle::where('status', 1)->get();
-        if ($get_vehicle) {
-            return response()->json([
-                'status' => 'OK',
-                'message' => 'Vehicle Fetched Successfully',
-                'data' => $get_vehicle
-            ], 200);
-        } else {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Vehicle not found'
-            ],401);
-        }
-    }
-
-    public function getAddressCoordinate($address)
-    {
-        $apiKey = getenv('GOOGLE_MAPS_API');
-        $url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($address) . "&key=" . $apiKey;
-
-        $response = file_get_contents($url);
-        $data = json_decode($response, true);
-
-        if ($data['status'] === 'OK') {
-            $location = $data['results'][0]['geometry']['location'];
-            return [
-                'ltd' => $location['lat'],
-                'lng' => $location['lng']
-            ];
-        } else {
-            throw new Exception('Unable to fetch coordinates');
-        }
-    }
-
-    public function get_suggestion(Request $request)
-    {
-        $request->validate([
-            'search' => 'required|string|max:255',
-        ]);
-        $apiKey = env('GOOGLE_MAPS_API');
-        $input = urlencode($request->search);
-        $url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?input={$input}&key={$apiKey}";
-        try {
-            $response = file_get_contents($url);
-            if ($response === false) {
-                throw new \Exception('Failed to fetch data from Google API.');
-            }
-            $data = json_decode($response, true);
-            if (isset($data['status']) && $data['status'] === 'OK') {
-                return response()->json([
-                    'status' => 'success',
-                    'suggestions' => array_filter(array_column($data['predictions'], 'description')),
-                ], 200);
-            } else {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => $data['error_message'] ?? 'Unable to fetch suggestions',
-                ], 500);
-            }
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Something went wrong: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
-
-
-
-    public function get_booking_vehicle(Request $request)
-    {
-
-        $rules = [
-            'current_address'  => 'required',
-            'drop_address'     => 'required',
-        ];
-        $validate = \Myhelper::FormValidator($rules, $request);
-        if ($validate !== "no") {
-            return response()->json(['status' => false, 'errors' => $validate], 422);
-        }
-        $apiKey = env('GOOGLE_MAPS_API');
-        $get_radius = Global_helper::companyDetails()->radius;
-        // Step 1: Get current  location lat/lng from drop_address
-        $geocodeResponse = Http::get("https://maps.googleapis.com/maps/api/geocode/json", [
-            'address' => $request->current_address,
-            'key'     => $apiKey
-        ]);
-        $geocodeData = $geocodeResponse->json();
-        if (empty($geocodeData['results'][0])) {
-            return response()->json(['status' => false, 'message' => 'Invalid drop address'], 400);
-        }
-        $getCurrent = $geocodeData['results'][0]['geometry']['location'];
-        // Step 2: Get Vehcile within radius
-        $captains = $this->getCaptainsInRadius(
-            $getCurrent['lat'],
-            $getCurrent['lng'],
-            $get_radius,
-            $request->vehicle_type
-        );
-        // Step 3: Get drop location lat/lng from drop_address
-        $geocodeResponse = Http::get("https://maps.googleapis.com/maps/api/geocode/json", [
-            'address' => $request->drop_address,
-            'key'     => $apiKey
-        ]);
-        $geocodeData = $geocodeResponse->json();
-        if (empty($geocodeData['results'][0])) {
-            return response()->json(['status' => false, 'message' => 'Invalid drop address'], 400);
-        }
-        $dropLocation = $geocodeData['results'][0]['geometry']['location'];
-
-        // check if the drop address is in the same state as the current address
-        $dropAddressUrl = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($request->drop_address) . "&key=" . $apiKey;
-        $dropResponse = Http::get($dropAddressUrl);
-        $dropData = $dropResponse->json();
-        if (empty($dropData['results'][0])) {
-            return response()->json(['status' => false, 'message' => 'Invalid drop address'], 400);
-        }
-        $dropState = null;
-
-        foreach ($dropData['results'][0]['address_components'] as $component) {
-            if (in_array('administrative_area_level_1', $component['types'])) {
-                $dropState = $component['long_name'];
-                break;
-            }
-        }
-        if (!$dropState) {
-            return response()->json(['status' => false, 'message' => 'Unable to extract state from drop address'], 400);
-        }
-        $checkState = DB::table('tbl_state')->where('title', $dropState)->first();
-        if (!$checkState) {
-            return response()->json(['status' => false, 'message' => 'Drop address is outside serviceable states'], 400);
-        }
-
-        // Step 4: Get trip distance/duration from current to drop
-        $distanceMatrixResponse = Http::get("https://maps.googleapis.com/maps/api/distancematrix/json", [
-            'origins'      => $request->current_address,
-            'destinations' => $request->drop_address,
-            'key'          => $apiKey
-        ]);
-        $matrixData = $distanceMatrixResponse->json();
-        if (
-            $matrixData['status'] !== 'OK' ||
-            $matrixData['rows'][0]['elements'][0]['status'] === 'ZERO_RESULTS'
-        ) {
-            return response()->json(['status' => false, 'message' => 'Could not calculate route distance.'], 400);
-        }
-        $tripDuration = $matrixData['rows'][0]['elements'][0];
-
-        // Step 5: Loop through vehcile and calculate distance from source
-        $captainList = [];
-        foreach ($captains as $captain) {
-            $tripDistanceInKm = 0;
-            if (isset($tripDuration['distance']['text'])) {
-                $distanceText = $tripDuration['distance']['text']; // e.g., "12.4 km"
-                $tripDistanceInKm = floatval(str_replace(['km', 'Kms', 'KM', ','], '', $distanceText));
-            }
-
-            $kiloRate = $captain->kilo_meter ?? 0;
-            $extraCharges = $captain->extra_charges ?? 0;
-            $totalFare = ($tripDistanceInKm * $kiloRate) + ($tripDistanceInKm * $extraCharges);
-            $captain->kilo_meter_details = [
-                'trip_distance_km' => $tripDistanceInKm,
-                'rate_per_km'      => $kiloRate,
-                'extra_charges'    => $extraCharges,
-                'calculated_fare'  => round($totalFare, 2),
-            ];
-            $captainList[] = [
-                'vehicle_info'         => $captain,
-                'trip_to_drop'         => $tripDuration,
-                'destination_lat_lng'  => $dropLocation,
-                'current_lat_lng'      => $getCurrent
-            ];
-        }
-
-        return response()->json([
-            'status'  => 'OK',
-            'message' => 'Nearby vehicle fetched successfully',
-            'data'    => $captainList
-        ]);
-    }
-
-
-    public function get_single_booking_vehicle(Request $request, $id)
-    {
-        $apiKey = env('GOOGLE_MAPS_API');
-        $get_radius = Global_helper::companyDetails()->radius;
-
-        // Step 1: Get current location (lat/lng) from current_address
-        $currentResponse = Http::get("https://maps.googleapis.com/maps/api/geocode/json", [
-            'address' => $request->current_address,
-            'key'     => $apiKey
-        ]);
-
-        $currentData = $currentResponse->json();
-        if (empty($currentData['results'][0])) {
-            return response()->json(['status' => false, 'message' => 'Invalid current address'], 400);
-        }
-
-        $getCurrent = $currentData['results'][0]['geometry']['location'];
-
-        // Step 2: Get Captains/Vehicles within radius
-        $captains = $this->getCaptainsInRadius(
-            $getCurrent['lat'],
-            $getCurrent['lng'],
-            $get_radius,
-            $id // vehicle_type passed here
-        );
-
-        if (empty($captains) || empty($captains[0]->captain)) {
-            return response()->json(['status' => false, 'message' => 'No nearby captains found'], 404);
-        }
-
-        // Step 3: Get drop location lat/lng from drop_address
-        $dropResponse = Http::get("https://maps.googleapis.com/maps/api/geocode/json", [
-            'address' => $request->drop_address,
-            'key'     => $apiKey
-        ]);
-
-        $dropData = $dropResponse->json();
-        if (empty($dropData['results'][0])) {
-            return response()->json(['status' => false, 'message' => 'Invalid drop address'], 400);
-        }
-
-        $dropLocation = $dropData['results'][0]['geometry']['location'];
-
-        // Step 4: Get trip distance/duration from current to drop
-        $matrixResponse = Http::get("https://maps.googleapis.com/maps/api/distancematrix/json", [
-            'origins'      => $request->current_address,
-            'destinations' => $request->drop_address,
-            'key'          => $apiKey
-        ]);
-
-        $matrixData = $matrixResponse->json();
-        if (
-            $matrixData['status'] !== 'OK' ||
-            $matrixData['rows'][0]['elements'][0]['status'] === 'ZERO_RESULTS'
-        ) {
-            return response()->json(['status' => false, 'message' => 'Could not calculate route distance.'], 400);
-        }
-
-        $tripDuration = $matrixData['rows'][0]['elements'][0];
-
-        // Step 5: Loop through captains and calculate distance from current location
-        $captainList = [];
-        foreach ($captains[0]->captain as $capt) {
-
-
-            $distanceResponse = Http::get("https://maps.googleapis.com/maps/api/distancematrix/json", [
-                'origins'      => "{$getCurrent['lat']},{$getCurrent['lng']}",
-                'destinations' => "{$capt->lat},{$capt->long}",
-                'key'          => $apiKey
-            ]);
-
-            $distData = $distanceResponse->json();
-            if (
-                empty($distData['rows'][0]['elements'][0]['status']) ||
-                $distData['rows'][0]['elements'][0]['status'] !== 'OK'
-            ) {
-                continue; // skip if distance can't be calculated
-            }
-
-            $captainDistance = $distData['rows'][0]['elements'][0];
-
-            // Step 6: Calculate fare
-            $tripDistanceInKm = 0;
-            if (isset($tripDuration['distance']['text'])) {
-                $distanceText = $tripDuration['distance']['text']; // e.g., "12.4 km"
-                $tripDistanceInKm = floatval(str_replace(['km', 'Kms', 'KM', ','], '', $distanceText));
-            }
-
-            $kiloRate = $captains[0]->kilo_meter ?? 0;
-            $extraCharges = $captains[0]->extra_charges ?? 0;
-
-            $totalFare = ($tripDistanceInKm * $kiloRate) + ($tripDistanceInKm * $extraCharges);
-
-            // Step 7: Add data to list
-            $captainList[] = [
-                'captain_info'         => $capt,
-                'vehicle_info'         => [
-                    'vehicle_id'     => $captains[0]->id,
-                    'vehicle_name'   => $captains[0]->title ?? '',
-                    'vehicle_seater'   => $captains[0]->seater ?? '',
-                    'vehicle_image'   => $captains[0]->image ?? '',
-                    'rate_per_km'    => $kiloRate,
-                    'extra_charges'  => $extraCharges
-                ],
-                'fare_details'         => [
-                    'trip_distance_km' => $tripDistanceInKm,
-                    'calculated_fare'  => round($totalFare, 2),
-                ],
-                'trip_to_drop'         => $tripDuration,
-                'captain_distance'     => $captainDistance,
-                'destination_lat_lng'  => $dropLocation,
-                'current_lat_lng'      => $getCurrent,
-            ];
-        }
-
-        return response()->json([
-            'status'  => 'OK',
-            'message' => 'Nearby vehicle fetched successfully',
-            'data'    => $captainList
-        ]);
-    }
-
-
-
-
-
-
-    public function getCaptainsInRadius($lat, $lng, $radius, $vehicle_type)
-    {
-
-
-
-        $get_vehicle_query = DB::table('tbl_vehicle')->where('status', 1);
-        if ($vehicle_type) {
-            $get_vehicle_query->where('id', $vehicle_type);
-        }
-        $get_vehicle = $get_vehicle_query->get();
-        $new_data = [];
-        foreach($get_vehicle as $row){
-            $captains = DB::table('users')
-            ->select('*', DB::raw("(6371 * acos(cos(radians($lat)) * cos(radians(lat)) * cos(radians(`long`) - radians($lng)) + sin(radians($lat)) * sin(radians(lat)))) AS distance"))
-            // ->where('ride_vehicle_type', $vehicle_type)
-            ->where('car_id', $row->id)
-            ->where('role_id', 2)
-            ->having('distance', '<=', $radius)
-            ->orderBy('distance', 'asc')
-            ->get();
-            $row->captain = $captains;
-            $new_data[] = $row;
-         }
-         return $new_data;
-
-    }
-
-
-    public function create_booking(Request $request)
-    {
-        $rules = [
-            // 'captain_id' => 'required|integer',
-            // 'vehicle_id' => 'required|integer',
-            'vehicle_title' => 'required|string|max:100',
-            'vehicle_image' => 'required|string|max:255',
-            'vehicle_kilo_meter' => 'required|string|max:50',
-            'vehicle_extra_charges' => 'required|string|max:50',
-            'vehicle_seater' => 'required|integer',
-            'trip_distance_km' => 'required|numeric',
-            'rate_per_km' => 'required|numeric',
-            'calculated_fare' => 'required|numeric',
-            // 'captain_distance_text' => 'required|string|max:50',
-            // 'captain_duration_text' => 'required|string|max:50',
-            'trip_distance_text' => 'required|string|max:50',
-            // 'trip_distance_value' => 'required|integer',
-            'trip_duration_text' => 'required|string|max:50',
-            // 'trip_duration_value' => 'required|integer',
-            'current_lat' => 'required|numeric',
-            'current_lng' => 'required|numeric',
-            'current_address' => 'required|string|max:255',
-            'drop_lat' => 'required|numeric',
-            'drop_lng' => 'required|numeric',
-            'drop_address' => 'required|string|max:255'
-        ];
-        $validate = \Myhelper::FormValidator($rules, $request);
-        if ($validate != "no") {
-            return $validate;
-        }
-        $booking = new Booking();
-        $booking->user_id = $request->user->id;
-        $booking->captain_id = $request->captain_id;
-        $booking->vehicle_id = $request->vehicle_id;
-        $booking->vehicle_title = $request->vehicle_title;
-        $booking->vehicle_image = $request->vehicle_image;
-        $booking->vehicle_kilo_meter = $request->vehicle_kilo_meter;
-        $booking->vehicle_extra_charges = $request->vehicle_extra_charges;
-        $booking->vehicle_seater = $request->vehicle_seater;
-        $booking->trip_distance_km = $request->trip_distance_km;
-        $booking->rate_per_km = $request->rate_per_km;
-        $booking->calculated_fare = $request->calculated_fare;
-        $booking->captain_distance_text = $request->captain_distance_text;
-        $booking->captain_duration_text = $request->captain_duration_text;
-        $booking->trip_distance_text = $request->trip_distance_text;
-        $booking->trip_distance_value = $request->trip_distance_value;
-        $booking->trip_duration_text = $request->trip_duration_text;
-        $booking->trip_duration_value = $request->trip_duration_value;
-        $booking->current_lat = $request->current_lat;
-        $booking->current_lng = $request->current_lng;
-        $booking->current_address = $request->current_address;
-        $booking->drop_lat = $request->drop_lat;
-        $booking->drop_lng = $request->drop_lng;
-        $booking->drop_address = $request->drop_address;
-        $booking->otp = rand(1000, 9999);
-        $booking->save(); // Save to DB
-        $get_data = $this->get_single_booking_vehicle($request, $request->vehicle_id);
-        $responseData = $get_data->getData();
-        $new_data = $responseData->data;
-        foreach($new_data as $row){
-            DB::table('tbl_booking_log')->insert([
-                'captain_id' => $row->captain_info->id,
-                'booking_id' => $booking->id,
-                'user_id'    => $request->user->id,
-                'booking_type' => 1,
-            ]);
-        }
-        return response()->json(['status' => 'OK', 'message' => 'Booking created successfully','data'=>$booking], 200);
-    }
-
-
-    public function fetch_booking(Request $request)
-    {
-        $get_booking_log = DB::table('tbl_booking_log')->where('captain_id',$request->user->id)->where('booking_type', 1)->where('status',1)->get();
-        $new_data = [];
-        foreach($get_booking_log as $row){
-            $get_booking = DB::table('tbl_booking')->where('id',$row->booking_id)->first();
-            $row->booking = $get_booking;
-            $new_data[] = $row;
-        }
-        // dd($get_booking_log);
-        // $get_booking_log = DB::table('tbl_booking_log as a')->leftJoin('tbl_booking as b','a.booking_id','=','b.id')->select('b.*','a.booking_type as  booking_status_tbl_log')->where('a.captain_id', $request->user->id)->where('a.booking_type', 1)->get();
-        return response()->json(['status' => 'OK', 'message' => 'Booking fetched successfully', 'data' => $new_data], 200);
-    }
-
-
-    public function fetch_booking_user(Request $request ,$id){
-        $get_booking = DB::table('tbl_booking')->where('id',$id)->first();
-        if($get_booking->booking_status == 2){
-            $get_booking->captain_info = DB::table('users')->where('id',$get_booking->captain_id)->first();
-        }
-        if($get_booking){
-            return response()->json(['status' => 'OK', 'message' => 'Booking fetched successfully', 'data' => $get_booking], 200);
-        }else{
-            return response()->json(['status' => 'Error', 'message' => 'Booking not found'], 404);
-        }
-    }
-
-    public function activate_booking(Request $request , $id){
-
-        $get_booking = DB::table('tbl_booking')->where('id',$id)->where('captain_id',$request->user->id)->where('otp',$request->otp)->first();
-        if(!$get_booking){
-            return response()->json(['status' => 'Error', 'message' => 'Invalid OTP'], 401);
-        }
-        if($get_booking->booking_status == 2){
-            DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 3] );
-            DB::table('tbl_booking_log')->where('captain_id', $request->user->id )->where('booking_id',$id)->update(['status' => 2]);
-            DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 3]);
-            return response()->json(['status' => 'OK', 'message' => 'Booking activated successfully'], 200);
-        }else{
-            return response()->json(['status' => 'Error', 'message' => 'Booking not found'], 404);
-        }
-    }
-
-    public function update_booking_status(Request $request ,$id){
-
-        // accept booking for captain
-        if($request->booking_status == 2){
-            $get_booking = Booking::where('id', $id)->first();
-            if($get_booking->booking_status != 1){
-                return response()->json(['status' => 'Error','message' => 'Booking status is not accepted'], 401);
-            }
-            DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 2 , 'captain_id'=> $request->user->id] );
-            DB::table('tbl_booking_log')->where('captain_id', $request->user->id )->where('booking_id',$id)->update(['status' => 2]);
-            DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 2]);
-            return response()->json(['status' => 'OK', 'message' => 'Booking Accepted successfully'], 200);
-        }
-
-        // captain side cancel booking
-        if($request->booking_status == 5 && $request->user->role_id == 2){
-            $get_booking = Booking::where('id', $id)->first();
-            if($get_booking->booking_status != 1){
-                return response()->json(['status' => 'Error','message' => 'Booking status is not accepted'], 401);
-            }
-            DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 5 , 'captain_id'=> $request->user->id] );
-            DB::table('tbl_booking_log')->where('captain_id', $request->user->id )->where('booking_id',$id)->update(['status' => 2]);
-            DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 5]);
-            return response()->json(['status' => 'OK', 'message' => 'Booking Cancel successfully'], 200);
-        }
-
-        // user side cancel booking
-        if($request->booking_status == 5 && $request->user->role_id == 3){
-            $get_booking = Booking::where('id', $id)->first();
-            if($get_booking->booking_status != 1){
-                return response()->json(['status' => 'Error','message' => 'Booking status is not accepted'], 401);
-            }
-            DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 5 ] );
-            DB::table('tbl_booking_log')->where('user_id', $request->user->id )->where('booking_id',$id)->update(['status' => 2]);
-            DB::table('tbl_booking_log')->insert(['user_id' => $request->user->id, 'booking_id' => $id, 'booking_type' => 5]);
-            return response()->json(['status' => 'OK', 'message' => 'Booking Cancel successfully'], 200);
-        }
-
-        // captain side complete booking
-        if($request->booking_status == 4){
-            $get_booking = Booking::where('id', $id)->first();
-            if($get_booking->booking_status != 1){
-                return response()->json(['status' => 'Error','message' => 'Booking status is not accepted'], 401);
-            }
-            DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 4] );
-            DB::table('tbl_booking_log')->where('captain_id', $request->user->id )->where('booking_id',$id)->update(['status' => 2]);
-            DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 4]);
-            return response()->json(['status' => 'OK', 'message' => 'Booking Accepted successfully'], 200);
-        }
-
-    }
-
-    public function accept_booking(Request $request ,$booking_id)
-    {
-
-        $check_exist_booking = Booking::where('accept_user_id',$request->user->id)->where('status',1)->where('booking_status',2)->first();
-        if($check_exist_booking){
-            return response()->json(['status' => 'Error','message' => 'You have already accepted a booking'], 401);
-        }
-        $get_booking = Booking::where('id', $booking_id)->first();
-        $get_booking_percentage_amount =  ($get_booking->booking_amount * $get_booking->booking_percentage) / 100 + $get_booking->booking_tax;
-        $get_user_wallet = DB::table('users')->where('status', 1)->where('id', $request->user->id)->first();
-        if($get_user_wallet->vehicle_type == '' || $get_user_wallet->vehicle_capicity == '' || $get_user_wallet->registration_number == '' || $get_user_wallet->service_expiry_date == ''){
-            return response()->json(['status' => 'Error','message' => 'Please complete your profile to accept this booking'], 401);
-        }
-        if ($get_user_wallet->wallet_amount >= $get_booking_percentage_amount) {
-            $main_wallet = $get_user_wallet->wallet_amount - $get_booking_percentage_amount;
-            DB::table('users')->where('id', $request->user->id)->update(['wallet_amount' => $main_wallet,  'reserve_amount' => $get_booking_percentage_amount, 'withdraw_amount' => $main_wallet, 'updated_at' => date('Y-m-d H:i:s')]);
-            DB::table('tbl_booking_log')->insert(['user_id' => $request->user->id, 'booking_id' => $booking_id, 'booking_type' => 2]);
-            DB::table('tbl_booking')->where('id', $booking_id)->update(['booking_status' => 2 , 'accept_user_id' => $request->user->id ,'accept_user_vehicle_type' => $get_user_wallet->vehicle_type ,'accept_user_vehicle_capicity'=> $get_user_wallet->vehicle_capicity, 'accept_user_registration_number'=> $get_user_wallet->registration_number , 'accept_user_service_expiry_date'=> $get_user_wallet->service_expiry_date]);
-            DB::table('tbl_statement')->insert(['user_id' => $request->user->id, 'booking_id' => $get_booking->id, 'transaction_type' => 1, 'payment_type' => 2, 'amount' => $get_booking_percentage_amount , 'payment_status' => 3]);
-            return response()->json(['status' => 'OK', 'message' => 'Booking status updated successfully'], 200);
-        }
-          return response()->json(['status' => 'Error', 'message' => 'Insufficient wallet balance'], 400);
-    }
-
-    public function complete_booking(Request $request , $booking_id)
-    {
-        $get_booking = Booking::where('id', $booking_id)->first();
-        if($get_booking->booking_status != 2){
-            return response()->json(['status' => 'Error','message' => 'Booking status is not accepted'], 401);
-        }
-        $booking_accept_user = DB::table('users')->where('status', 1)->where('id', $get_booking->accept_user_id)->first();
-        $get_admin_wallet = DB::table('users')->where('status', 1)->where('id',1)->first();
-        $booking_post_user = DB::table('users')->where('status', 1)->where('id', $get_booking->user_id)->first();
-        $post_user_commision =   ($booking_accept_user->reserve_amount * $get_booking->booking_post_percentage) /  100 - $get_booking->booking_post_tds ;
-        $final_post_user_commision = $booking_post_user->wallet_amount + $post_user_commision;
-        $admin_commision = $booking_accept_user->reserve_amount - $post_user_commision;
-        $final_admin_commision = $get_admin_wallet->wallet_amount + $admin_commision;
-        // accept user booking
-        DB::table('users')->where('id', $get_booking->accept_user_id)->update(['reserve_amount' => 0, 'withdraw_amount' => 0 ,'updated_at' => date('Y-m-d H:i:s')]);
-        DB::table('tbl_statement')->where('user_id' , $get_booking->accept_user_id)->where('booking_id' , $get_booking->id)->update(['payment_status' => 1]);
-        // admin commision user booking
-        DB::table('users')->where('id', 1)->update(['wallet_amount' => $final_admin_commision,'updated_at' => date('Y-m-d H:i:s')]);
-        DB::table('tbl_statement')->insert(['user_id' => 1, 'booking_id' => $get_booking->id , 'transaction_type' => 2, 'payment_type' => 1, 'amount' => $admin_commision , 'payment_status' => 1]);
-        DB::table('tbl_booking_log')->insert(['user_id' => $get_booking->accept_user_id, 'booking_id' => $get_booking->id, 'booking_type' => 3]);
-        DB::table('tbl_booking')->where('id', $get_booking->id)->update(['booking_status' => 3 ]);
-        // post user commission
-        DB::table('tbl_statement')->insert(['user_id' => $get_booking->user_id,  'booking_id' => $get_booking->id ,'transaction_type' => 4, 'payment_type' => 1, 'amount' => $post_user_commision , 'payment_status' => 1]);
-        DB::table('users')->where('id', $get_booking->user_id)->update(['wallet_amount' => $final_post_user_commision,'updated_at' => date('Y-m-d H:i:s')]);
-        return response()->json(['status' => 'OK','message' => 'Booking accepted successfully'], 200);
-
-    }
-    public function cancel_booking(Request $request , $booking_id)
-    {
-        $get_booking = Booking::where('id', $booking_id)->first();
-        if($get_booking->booking_status != 2){
-            return response()->json(['status' => 'Error','message' => 'Booking status is not accepted'], 400);
-        }
-        $booking_accept_user = DB::table('users')->where('status', 1)->where('id', $get_booking->accept_user_id)->first();
-        $get_admin_wallet = DB::table('users')->where('status', 1)->where('id',1)->first();
-        $booking_post_user = DB::table('users')->where('status', 1)->where('id', $get_booking->user_id)->first();
-        $post_user_commision =   ($booking_accept_user->reserve_amount * $get_booking->booking_post_percentage) /  100 - $get_booking->booking_post_tds ;
-        $final_post_user_commision = $booking_post_user->wallet_amount + $post_user_commision;
-        $admin_commision = $booking_accept_user->reserve_amount - $post_user_commision;
-        $final_admin_commision = $get_admin_wallet->wallet_amount + $booking_accept_user->reserve_amount;
-        // accept user booking
-        DB::table('users')->where('id', $get_booking->accept_user_id)->update(['reserve_amount' => 0, 'withdraw_amount' => 0 ,'updated_at' => date('Y-m-d H:i:s')]);
-        DB::table('tbl_statement')->where('user_id' , $get_booking->accept_user_id)->where('booking_id' , $get_booking->id)->update(['payment_status' => 1]);
-        // admin commision user booking
-        DB::table('users')->where('id', 1)->update(['wallet_amount' => $final_admin_commision,'updated_at' => date('Y-m-d H:i:s')]);
-        DB::table('tbl_statement')->insert(['user_id' => 1, 'transaction_type' => 5, 'booking_id' => $get_booking->id ,'payment_type' => 1, 'amount' => $booking_accept_user->reserve_amount , 'payment_status' => 1]);
-        DB::table('tbl_booking_log')->insert(['user_id' => $get_booking->accept_user_id, 'booking_id' => $get_booking->id, 'booking_type' => 4]);
-        DB::table('tbl_booking')->where('id', $get_booking->id)->update(['booking_status' => 4 ]);
-        // post user commission
-        // DB::table('tbl_statement')->insert(['user_id' => $get_booking->user_id, 'transaction_type' => 4, 'payment_type' => 1, 'amount' => $post_user_commision , 'payment_status' => 1]);
-        // DB::table('users')->where('id', $get_booking->user_id)->update(['wallet_amount' => $final_post_user_commision,'updated_at' => date('Y-m-d H:i:s')]);
-        return response()->json(['status' => 'OK','message' => 'Booking status updated successfully'], 200);
-
-    }
-
-
-/**
- * Update wallets and logs for booking acceptance.
- */
-private function updateWalletsAndLogs($userId, $bookingId, $adminAmount, $postUserWallet, $postUserId, $postUserBookingAmount)
-{
-    DB::table('users')->where('id', $userId)->update([
-        'reserve_amount' => 0,
-        'withdraw_amount' => 0,
-        'updated_at' => now()
-    ]);
-
-    DB::table('users')->where('id', 1)->update([
-        'wallet_amount' => $adminAmount,
-        'updated_at' => now()
-    ]);
-
-    DB::table('tbl_statement')->insert([
-        'user_id' => 1,
-        'transaction_type' => 2,
-        'payment_type' => 1,
-        'amount' => $adminAmount,
-        'payment_status' => 1
-    ]);
-
-    DB::table('tbl_booking_log')->insert([
-        'user_id' => $userId,
-        'booking_id' => $bookingId,
-        'booking_type' => 3
-    ]);
-
-    DB::table('tbl_booking')->where('id', $bookingId)->update(['booking_status' => 3]);
-
-    if ($postUserId) {
-        DB::table('tbl_statement')->insert([
-            'user_id' => $postUserId,
-            'transaction_type' => 4,
-            'payment_type' => 1,
-            'amount' => $postUserBookingAmount,
-            'payment_status' => 1
-        ]);
-
-        DB::table('users')->where('id', $postUserId)->update([
-            'wallet_amount' => $postUserWallet,
-            'updated_at' => now()
-        ]);
-    }
-}
-
-
-    public function fetch_my_booking(Request $request , $id) {
-
-        $query  = DB::table('tbl_booking')->where('status',1);
-        if($id == 1){
-            $query->where('user_id', $request->user->id);
-        }else{
-            $query->where('captain_id', $request->user->id);
-        }
-        $booking = $query->get();
-        if($booking){
-            return response()->json(['status' => 'OK','message' => 'Booking fetched successfully', 'data' => $booking], 200);
-        }else{
-            return response()->json(['status' => 'Error','message' => 'No booking found'], 401);
-        }
-    }
-
-    public function wallet_statement(Request $request){
-
-        $user_wallet = DB::table('tbl_statement')->where('user_id', $request->user->id)->get();
-        if($user_wallet){
-            return response()->json(['status' => 'OK','message' => 'Wallet statement fetched successfully', 'data' => $user_wallet], 200);
-        } else{
-            return response()->json(['status' => 'Error','message' => 'No wallet statement found'], 401);
-        }
-    }
-
-
-
-
-
     public function get_aadhar_otp(Request $post)
     {
+
+        return response()->json(['status' => 'TXNOTP', 'message' => "Aadhar verify successfully","client_id"=>6783597812]);
+
+
         $rules = array(
             'register_aadhar' => 'required'
         );
@@ -840,114 +30,327 @@ private function updateWalletsAndLogs($userId, $bookingId, $adminAmount, $postUs
         if ($validate != "no") {
             return $validate;
         }
-        $aes_key = "3c8cdd3e3028795dacf67ef25a89509a989768b067a7b591cc468954ad4e1620";
-        $aes_iv = "ec5bad40b2162069";
+        // encrypt
         $user_data = array(
-            'p1' => "Advance",
-            "p2" => $post->register_aadhar,
-            "p3" => "sdfgs6848"
+            "p1" => $post->register_aadhar,
+            "p2" => rand(0000000000,9999999999)
         );
-        $encrypt_data = \Myhelper::newEncrypt(json_encode($user_data), $aes_key, $aes_iv);
+        $urls = "https://api.nifipayments.com/api/user/encrypt";
+        $headers = [
+            "Accept: application/json",
+            "Content-Type: application/json",
+            "x-api-iv: 58e45c94e3c0707abbe7ae9f12f4fff2",
+            "x-api-key: d1ef40c68da4df29e4a28df898c13b636748f6c56d3290027cf5946ca06f794a"
+        ];
+        $encrypt_data = \Myhelper::curl($urls, "POST", json_encode($user_data), $headers, "yes", "report");
+        // encrypt
         $aadharRecord = \DB::table("kycdatas")->where("type", "aadhar")->where('number', $post->register_aadhar)->first();
         if (!$aadharRecord) {
-            $url = "http://192.168.0.181:8000/api/v1/validate/aadhar";
+            $url = "https://api.nifipayments.com/api/v1/validate/aadhar/advance";
             $header = array(
                 'Accept: application/json',
                 'Content-Type: application/json',
-                'client_id: 98dfe4dbc68bb6948a85137927f857e0',
-                'x-api-key: 596e6fc87495e86afb31437b866cce1e00a1248169a90f0fa8eefc230a0b7af4',
+                'x-client-id: e26c92f1fb5a0b937a125b4797c8e42d',
+                'x-api-key: 9efb1d0446137c4be81c06ddad6de420041000e0acd4baeaf03bfe624d7dbd0e',
             );
-            $parameter['body'] = $encrypt_data;
+            $parameter['body'] = json_decode($encrypt_data['response'])->body;
             $result = \Myhelper::curl($url, "POST", json_encode($parameter), $header, "yes", "report", $post->register_aadhar);
-            $dec_res = json_decode($result['response']);
-            $decrypt_data = \Myhelper::newDecrypt($dec_res->body, $aes_key, $aes_iv);
+
+            // decrypt
+            $urls1 = "https://api.nifipayments.com/api/user/decryptReq";
+            $user_data1 = array(
+                "body" => json_decode($result['response'])->body
+            );
+            $decrypt_data = \Myhelper::curl($urls1, "POST", json_encode($user_data1), $headers, "yes", "report");
+            // decrypt
+
             if ($decrypt_data != "") {
-                $response = json_decode($decrypt_data);
-                if (isset($response->data->data->otp_sent) && $response->data->data->otp_sent === true) {
-                    return response()->json(['status' => 'TXNOTP', 'message' => "Aadhar verify successfully", "client_id" => $response->data->transaction_id],200);
+                $response = json_decode($decrypt_data['response'])->body;
+                $response1 =json_decode($response);
+                if (isset($response1->data->data->otp_sent) && $response1->data->data->otp_sent === true) {
+                    return response()->json(['status' => 'TXNOTP', 'message' => "Aadhar verify successfully", "client_id" => $response1->data->transaction_id]);
                 } else {
-                    return response()->json(['status' => 'ERR', 'message' => isset($response->message) ? $response->message : "Please contact your administrator"],401);
+                    return response()->json(['status' => 'ERR', 'message' => isset($response1->message) ? $response1->message : "Please contact your administrator"]);
                 }
             } else {
-                return response()->json(['status' => 'ERR', 'message' => "Please contact your administrator"] ,401);
+                return response()->json(['status' => 'ERR', 'message' => "Please contact your administrator"]);
             }
-        } else {
+        }
+         else {
             $response = json_decode($aadharRecord->response);
             return response()->json([
-                'status'  => 'TXN',
-                'message' => "Aadhar re-verified successfully",
-                "profile" => "data:image/png;base64, " . $response->profile_image,
-                "mobile"  => $aadharRecord->mobile,
-                'state'   => $response->address->state,
-                'pincode' => $response->zip,
-                'city'    => $response->address->po,
-                'address' => $response->address->house . " " . $response->address->street . " " . $response->address->loc
+                'status'  => 'success',
+                'message' => "Aadhar verified successfully",
+                "response" => $aadharRecord->response
+                // 'message' => "Aadhar re-verified successfully",
+                // "profile" => "data:image/png;base64, " . $response->profile_image,
+                // "mobile"  => $aadharRecord->mobile,
+                // 'state'   => $response->address->state,
+                // 'pincode' => $response->zip,
+                // 'city'    => $response->address->po,
+                // 'address' => $response->address->house . " " . $response->address->street . " " . $response->address->loc
             ]);
         }
     }
 
     public function checkaadharotp(Request $post)
     {
+        return response()->json(['status' => 'success', 'message' => "Aadhar verified successfully" ,"response"=> "{\"client_id\":\"aadhaar_v2_yroDkhCAOkRCbAxjbcjr\",\"full_name\":\"Rajbir Singh\",\"aadhaar_number\":\"XXXXXXXX9175\",\"dob\":\"2002-11-18\",\"gender\":\"M\",\"address\":{\"country\":\"India\",\"dist\":\"Amritsar\",\"state\":\"Punjab\",\"po\":\"Amritsar G.P.O\",\"loc\":\"Block -E, Pyramid City\",\"vtc\":\"Amritsar -I\",\"subdist\":\"Amritsar\",\"street\":\"Sultanwind Link Road\",\"house\":\"2\",\"landmark\":\"Near Golden Gate\"},\"face_status\":false,\"face_score\":-1,\"zip\":\"143001\",\"profile_image\":\"\\/9j\\/4AAQSkZJRgABAgAAAQABAAD\\/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL\\/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL\\/wAARCADIAKADASIAAhEBAxEB\\/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL\\/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6\\/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL\\/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6\\/9oADAMBAAIRAxEAPwD3uikoxVGItFJiikAtFJiloAMUmB6UtJQAbV9BSbF\\/uj8qWii4rITYv90UbF9KXFFO4WQmwf5NGxff86dijFAcq7Ddg9\\/zo2D1NOoouLlQzZ\\/tGjZ\\/tGn0UXDlQzYf7xpdp\\/vfpTqTFFx8qFopMUtIYUtJRQO4UUUUAFMaVFOM5PoKpXt6I2MS5ZuhUf1rNa6foz\\/8ASs51OU1jTubhuUHUqPq2KYbxOzoPzrEErEcIB7k0okfjlawddmqpI2ftRz99D+dKLr1UH6GshZHz1P4GpVkbpnP1qVXYeyRrLcRscZwfepuKyUYmrEcrJwD+FbRrJ7mcqdti9RTEcOOKdWydzLVC0UmKMUw1FopMUtACUUlGKCRaKSigBagu5hDATu257+lTVgapch33OTsBwid2PsP8\\/UVM3ZFwV2VJpw2Qvyr+pqLzVRgGIUnoM4z+HU1A\\/mS9cr6BTj9f8P1qMbFzluh52jgfWuCpM74RLizKemc+y4\\/nUgmyOjfpWeLhSAyEkHuoLfqoIqbzwpGWkzxjkD+dYORpylwTR5wWYH1KkD86mRyRlJAw9jmqQnbdgq+MdSCf5CnLJHKdy4PH3l6kfhzS5hOJeF2Iz+8G0evT\\/61XYp0kX1H6isxGY9CJFzgjPI\\/p6cUghePMlq2COsZ6fl2+o\\/WtITM5RRuRvtIOcg9DVsHIzWPaXImXoVcfeU\\/5\\/WtOA5XFd1KV9DlqKxNRRRWxmFFFFADc0UUVRncM0ZpKKBXIrqTy7dj+FcpdzKJGZzlj8ox1PsPQf8A6zzW5rMwitwM4JrjJ33kljgnIHOBgdh7Due\\/5Y560raHVh431JpbwvkZG30Hf\\/H\\/AOv0NRLM28AjcU9edvH5D\\/x2qxXC8swBBz1BOefqPXA+pNAnVWAVeR0AAO0+uOnqCOD6Zri5ZSdoo77xgrsuB\\/MSMY3dw5Xdj8cMP1qfz5ECoVkYf3yo\\/of6VXjTcF3opAOdrMXIPseOKm2SEfNPIR7qnH\\/jtbLBVJGLxlNCRuVd5clU6lmUx4x6naP51OJmK7nGUJ6nkY+oJ\\/XFQJbESCTzSxHQMigf+OgU\\/bMmGBDnOe\\/5ev6n6VM8FViOOKpyZZjmwy5JDHkbj179fT9PrV2G8GcSEoy9GPB+vuOn9cVkxurHauEkPQE4Dnv9D7jBGeRUoYqgypwpHB+8pPTp\\/Tr29Dzq6dmatJm0xyTKgAmTqB0Yf4H+dadnOsgVh0YVg2kwLohwR\\/yzYdPp9D\\/ntnUtFMVxgfdLBh+P\\/wBeuyi9TjqqyNeikpcV2HMFFJRQFxuaM0lIaoyuLmkzRSU7EORzniabbJGmfl25J9Pr\\/ntXKtPhSzBixOFXP5D8M\\/mTXReK4szxyEHBjwP9rBJI\\/LNcpK7ZyWOc7R2O45yfrw5z64rlrRu7HoYeSULkjuVJB5Y9T\\/h7fz6mnQnnNYWo300LeVbpkgfMRwBWS+palnALKPwrvo4dQiclSu5yuekW5UjGauKAV6CvM7TWtRSRSZCQDzxziuv07U3uYwWGWrbksZcxv7VZccGmMqgdOlZN7qv2VORg1h3HjCSJ8LFuUGlyNi5jqZIlcMAv3uuOPxz2PvT7aUyYgkIMmCFZv416EN+gP1B78crb+MtzDdCV55BFbtvqFtqarLCCkqH50P8AEOnH1BI\\/H2rjxWEvHnW504fE2lyPYuoTBKYudrnK888n+ec59+e9dDaz\\/aBA2QSxGSOmQea5u+J+zmRhuIw2cdTwD9AflNbnh9XeVt5LGPJJxgAnGB+R\\/SuSgr6nXWelzoqWkorqOO4uaKSigLkW6mlqSkrSxyOTF3UhakpDVWM3JmJ4pj36asgBJifPHpj\\/APVXExDdI2cNsGMkck8c\\/mp\\/OvQtWiM2mXCDrsz+XNcHZRb4Gc43EkfqankvNHXSqfuWjC1GVEPzMEGeTWe2p21mVzaOyv8AddhjP510N7pYnJOAT7is\\/wDsMugR9hUHIDDOPwrsVupCvbQpQzw3LRusTRebnZkYDY9K6Pw+wMhUoTg9qp\\/2cIogCc7RgcYxW5oVt5OcLwaT8iku4zWI1dwqoMkd65Ga9tYJsyJuQNjIXPNeh6jZido2IxxXMX\\/hvcphVV8vOdpGBn2xTj5kvyILW+sLqPZbuhl7LIm0n6YA\\/rWzpex2yV2uOKyovD7tEluYdsanOAOc+uetdNpmlG2VdxLY7t1ola2hFxly+2wlfgqYWbn\\/AHSB+iiun8NQhNN83BzKQefYAVzdxal4bi3Ax8hUAdAMMBXa2Nv9lsYYSMFEAOPXvXmwjypo9CrO8UWc0ZpMUVZzi5ozRSUDK+aTNFJWpwthmgtSGmmmRcbJhlII4IxXn2BaXk9v2QnH\\/fTV6A1cZ4itPJ1ZbkH5ZY9uPQj\\/APXWtNXZcJ20K\\/mgjpTCgJyBiq6sc8ZqdDn\\/AOvVtHQiCY7pBGCABya19MkhDj5xwOfeua1dpYkMkJOTwaytOu7+IN5krSHscYIp2uimeqO1vPBsMiiQfdqkwD\\/KwGRXHRXGqzXMTROhj7gjkV11sH8kM5yx60mrEXJoFWPtVsTLt4GKpeZt9\\/ahXyaViZF3SIlu72aZxlUYYB9QTiujBrI0OExaerMMNIdxrWFcslqzVTuOzRmkpagsM0ZoooArZpCaQ0hrY89sC1NLUEUhBpk3Gs1cx4pk2xw9Mbua6crWJrtiLu0fB+cDitqVrivY5ASgVQvtUltThI92f0p7uUYoTyDiq1wizHrirkrM7Iu6ImvXnhzO4QE5xmrVrd6f5ZSVWyejDFZraZErbgu9epBPSrUdppjAbolBH+2Rn9aLm0YJrU00u7MFBCTEQRjcetXE8S\\/Z5hbzKSOgZayk0yzuQFiiAz\\/FuJx+tXI9FhgClZC5H985odupnOKT0N9LjzRuHKmrEDeZKqHjccVnq4RABxgVo6PF9pvQedq\\/MTSXcxm7I6xMBQB0FSBqjAxThXIwi2iUNS5pgpwqGdCbHZpM0UUiiqTTSaKStzzrhSE4oNNNAhGaqdzhlIq2elVZhnNawEzzbxUV0\\/UVdBhHGW+tZ8E8dwMqwqz47cS3gRQR5YwSe9cZb3stnJ8pJTPNay1OqltqdotpvGGcYNMGhRtOGM547GufXWyed\\/Xpg1Zj8SFU5bJHAJqUmjVs7K00uNIwY5Ax9c1YeHy8M7cL0riIfE8glBBAX2NLe+JpZoPKjOWPU0+Vsls6G81ZFnEERDSHgDNdv4fjKW0R4JKgsQfWvJNER5LvfISTjg1694elt5rT9zIpZPldAclSOOac7KDOeomzdBpwNMFPArjY4tjwaeDUYp4FQzoi2LmjNFFIu7KeaaXpuaax5roSPOFL00vTGYDvxVJ9TtFuBB5ymVhkKvNWogk2XTJVS8n8m3kk4yBxmql5qqW0W9iiDOMue9YlzfT3MMgd9yvGSAMAAA88f561pGPUuMGzlfE80lzLHcMAYWGzpyO4yffmuQmgyxIziu4udstpLC0YfzflUn+E+tcpLFJBK0Mq4ZTg+9Jtnba2iMCWJgTzwOlM2SEdeP51sNArnkU9bTAHFK4GbFDJuweua1LezkGMIeTxV6104M29xnPat63tUEYXHAo5yGO0u1S3i8x1BwPTmofC\\/iR7HXLgrysspLDPVcnj9asXc4gtn28cVxNm5jumYHo+a0h710yHtc+kIJ0niSRGBVhkEVODWJ4dure40uIW5XagAwK2xXJNWdjNXTHg07NMFPrNm0Wxc0ZpKXFIvU5+fVbeGQxlw0gGdo7Vg6r4olt4IjDGoaZsLznj1qKwtUDspy78kkHnpRqdnbR6hZxyABUhZsucDPAruSijn9nFNIoya5NdELICTns2Afwp8rsoMkWI2iYAPnJJNT2mlRSXRkUnYuWyvIpNRittO0\\/fcS4YgykMepPTikjaTjeyOSv7yWaGVi7M01yNufRQf8RWxdySaamm3TIwt9vly\\/Ru\\/wCYzWa19YmOwQOc5aQgR8jJx6f7Na\\/iG986xjgFk7IUX5mbB4B7fjW0rpERd9EjN1Yst7uh\\/wCPZBwR0JNZRtRqCgAf6YxzuJ4x2H\\/16v2tyLq0GnFgsh+4x7r6U7To1tJ5JvvFGIUN1OO5rNrqaXuuV9Dnbi1ntLhoZ4milQ4KsMEVNC6jAwK6u7D+JrVpoxDLJb\\/KWJxIR6Y9PT\\/9dcvLD5TgEEEGoaEn3L8LYGBV3zdie9ZkLgMB61emBVBSAz9RuWaNue1c7E2Jz6k1s6iMAD+9WYsQWYNxWlJ6ky2PXfAyzJo6THiNzge3bNdYbw24JmGUH8S1xvhC7u49IOSGgQKPLBB2+9dDqDB7Jpod3yjcVH8Q7is5xvLUnmurm5BPHcRLJG25W6Gpc1zFpr1j5Ue3ciADbt5H41fTVCCDuVkPTNZODuUk7GxupQ1VYbuKbvtPoas1m1YE2eRaPbAtNJE8kZCHlTU2sM512zS4labMTABu3P8A9arOh3GnfZJW3uCVA7d6o69dWo8S2pikMmyL7vvk8V1LmsVJxdQ07a0K285gkli34QBGwDk1m+I1WONwCztlUDMcmt+zvoDFB5lrIjMTIMDrgVy+vapLIiBLTbukyCw5pRT0TE2nJtIhFuzazDEqH93FGoAH+yP6k1ua9DKZlURtgEjp7CsezvdRufEshBRcTBcH2OP6Va8RSakZxmdR87dCfQD+lXJLuOm5XRjz2T29yt1sKgdSeBVi4lS6jSK0fJRR5so4BPUgetMsZdRS6C+cj+oboa1LiJxqUkckCW\\/mAFSB8pfHr71F9NDSXxK5DDbKpF3HNNC+fLJgUE8juO4p97bm7toxLboJYwQZUGBIM8H69f8AIqaK2eC5iklJjhIOVOQCfTNTXdwjOI4tpXGTt6D2oTajZmUkpTujl44GN8sYB4Nak0Dbs44FTW9sEuDK3U+9WJ57eCMtK6KPc1JRyWpgtJu6Bayg+6QVv69CI4YmUOpc854FZVrarlXc\\/LnjP8R9K3paK5E+x6L4a1HTU0\\/7E0qpdeWvXglvSur0wGSNo3wCV6djXiLQyC4aUMwYtnI9c16V4Z1qZ4IQziSYYQqR973qJ+Q+VqNyO90+XTrye2Iyg+eMgfwntVzRHme2dZIzIifOoPb1xS6xq1uuqATO0L\\/Zh8hGRnJ6VHpOs2UcgBMwDAjOOKl81wU7wH6he3ukM7QEFR8yq4yCKu2fiO4U28kyFoZkzlR36EYqDUNW0+40uJmnBYAody8\\/yrDstZtF0xkdpFMEwwWXIwQf\\/iauEeZNNGVSWiZU0m8tDYKHUAvIMgr2HNY15dQy+JppIlDbAFQAd8f\\/AK6KKOW0TTmvUOuivL6Pb\\/oZ\\/dW+fu+v\\/wCquWvp725vbOFrbG6QdQRnkUUU0lzLQzU5WYzR5byXXmk3RJulLHLrx1PrVnW5byS4GbqD+I\\/fX+8aKKuSRUJPmRmW73sd4m2WJyTjh1NdJr11dtpN4Z7ZkKY2uARg0UVEUrjrTkmhNMY3+kwXLTMUV1YrjJGeCKoeJZx4dm32yhlkb+P3Gf8AGiism3sbRiuc5O58U3k2cTBB6IMfrUuh3K3V8bm6ZpNv+rDnI3difpRRTN3a2hoah51xN5107BRnLEfoKfa\\/2fJfxxMXVUCjr3xz+uaKK0j8Jyz+I3Z9KspIkME4yc9T7mtPw9YTRXkZABCkdDmiioktwUmokvidtmrWLnGHQrz7f\\/rp8BWN4+MDOKKKynujSnrEiugj2GzaNyTsOnbmsW5byrS\\/UfwvG3T1z\\/jRRVx0kQ\\/hP\\/\\/Z\",\"has_image\":true,\"email_hash\":\"\",\"mobile_hash\":\"4affeb96c4cf60640088712d3f3b7d64dcfccf8dbb06b425098cce2735b2fafe\",\"raw_xml\":\"https:\\/\\/aadhaar-kyc-docs.s3.amazonaws.com\\/nerasoft\\/aadhaar_xml\\/917520250227182422214\\/917520250227182422214-2025-02-27-125422440640.xml?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAY5K3QRM5FYWPQJEB%2F20250227%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250227T125422Z&X-Amz-Expires=432000&X-Amz-SignedHeaders=host&X-Amz-Signature=0fd24fbdabf9d6e80c34d57fe2738be0d2625b028d35be9a5b9ec989a64c3ab2\",\"zip_data\":\"https:\\/\\/aadhaar-kyc-docs.s3.amazonaws.com\\/nerasoft\\/aadhaar_xml\\/917520250227182422214\\/917520250227182422214-2025-02-27-125422354598.zip?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAY5K3QRM5FYWPQJEB%2F20250227%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20250227T125422Z&X-Amz-Expires=432000&X-Amz-SignedHeaders=host&X-Amz-Signature=d7249f834ab4e83a37753034960571ab83509359b541fd67757a19af8df6313a\",\"care_of\":\"C\\/O: Surinder Singh\",\"share_code\":\"5491\",\"mobile_verified\":false,\"reference_id\":\"917520250227182422214\",\"aadhaar_pdf\":null,\"status\":\"success_aadhaar\",\"uniqueness_id\":\"06d6559db4ddd65ae8d23842f4603ffb574ab3bf8a7cc94cc891b975a75f5044\"}"]);
+
         $rules = array(
             'otp'       => 'required',
             'client_id' => "required",
-            'mobile'    => "required"
+            // 'mobile'    => "required"
         );
         $validate = \Myhelper::FormValidator($rules, $post);
         if ($validate != "no") {
             return $validate;
         }
-        $aes_key = "3c8cdd3e3028795dacf67ef25a89509a989768b067a7b591cc468954ad4e1620";
-        $aes_iv = "ec5bad40b2162069";
+
+        // encrypt
         $user_data = array(
-            'p1' => "Advance",
-            "p2" => $post->otp,
-            "p3" => $post->client_id
+        "p1" => $post->client_id,
+        "p2" => $post->otp
         );
-        $encrypt_data = \Myhelper::newEncrypt(json_encode($user_data), $aes_key, $aes_iv);
-        $url = "http://192.168.0.181:8000/api/v1/validate/otp-submit";
+        $urls = "https://api.nifipayments.com/api/user/encrypt";
+        $headers = [
+            "Accept: application/json",
+            "Content-Type: application/json",
+            "x-api-iv: 58e45c94e3c0707abbe7ae9f12f4fff2",
+            "x-api-key: d1ef40c68da4df29e4a28df898c13b636748f6c56d3290027cf5946ca06f794a"
+        ];
+        $encrypt_data = \Myhelper::curl($urls, "POST", json_encode($user_data), $headers, "yes", "report");
+
+        // encrypt
+        $url = "https://api.nifipayments.com/api/v1/validate/otp-submit/advance";
         $header = array(
             'Accept: application/json',
             'Content-Type: application/json',
-            'client_id: 98dfe4dbc68bb6948a85137927f857e0',
-            'x-api-key: 596e6fc87495e86afb31437b866cce1e00a1248169a90f0fa8eefc230a0b7af4',
+            'x-client-id: e26c92f1fb5a0b937a125b4797c8e42d',
+            'x-api-key: 9efb1d0446137c4be81c06ddad6de420041000e0acd4baeaf03bfe624d7dbd0e',
         );
-        $parameter['body'] = $encrypt_data;
-        $result = \Myhelper::curl($url, "POST", json_encode($parameter), $header, "yes", "report", $post->mobile);
-        $dec_res = json_decode($result['response']);
-        $decrypt_data = \Myhelper::newDecrypt($dec_res->body, $aes_key, $aes_iv);
+
+        $parameter['body'] = json_decode($encrypt_data['response'])->body;
+        $result = \Myhelper::curl($url, "POST", json_encode($parameter), $header, "yes", "report");
+
+        // decrypt
+        $urls1 = "https://api.nifipayments.com/api/user/decryptReq";
+        $user_data1 = array(
+            "body" => json_decode($result['response'])->body
+        );
+        $decrypt_data = \Myhelper::curl($urls1, "POST", json_encode($user_data1), $headers, "yes", "report");
+        // decrypt
         if ($decrypt_data != "") {
-            $response = json_decode($decrypt_data);
-            if (isset($response->status) && $response->status === true) {
+            $response = json_decode($decrypt_data['response'])->body;
+            $response1 =json_decode($response);
+            if (isset($response1->status) && $response1->status === 'success') {
+
                 \DB::table("kycdatas")->insert([
                     "type"   => "aadhar",
-                    "name"   => $response->data->data->full_name,
-                    "number" => $response->data->data->aadhaar_number,
+                    "name"   => $response1->data->full_name,
+                    "number" => $response1->data->aadhaar_number,
                     "mobile" => $post->mobile,
                     "state"  => $post->client_id,
-                    "response" => json_encode($response->data),
+                    "response" => json_encode($response1->data),
                     'user_id' => \Auth::id()
                 ]);
                 return response()->json([
-                    'status'  => 'TXN',
+                    'status'  => 'success',
                     'message' => "Aadhar verified successfully",
-                    "profile" => "data:image/png;base64, " . $response->data->data->profile_image,
-                    "mobile"  => $post->mobile,
-                    'state'   => $response->data->data->address->state,
-                    'pincode' => $response->data->data->zip,
-                    'city'    => $response->data->data->address->po,
-                    'address' => $response->data->data->address->house . " " . $response->data->data->address->street . " " . $response->data->data->address->landmark . " " . $response->data->data->address->loc
+                    // "profile" => "data:image/png;base64, " . $response1->data->profile_image,
+                    // "mobile"  => $post->mobile,
+                    // "number" => $response1->data->aadhaar_number,
+                    // "name"   => $response1->data->full_name,
+                    // 'state'   => $response1->data->address->state,
+                    // 'pincode' => $response1->data->zip,
+                    // 'city'    => $response1->data->address->po,
+                    // 'address' => $response1->data->address->house . " " . $response1->data->address->street . " " . $response1->data->address->landmark . " " . $response1->data->address->loc,
+                    "response" => json_encode($response1->data)
                 ]);
             } else {
-                return response()->json(['status' => 'ERR', 'message' => isset($response->message) ? $response->message : "Please contact your administrator"],401);
+                return response()->json(['status' => 'ERR', 'message' => isset($response1->message) ? $response1->message : "Please contact your administrator"]);
             }
         } else {
-            return response()->json(['status' => 'ERR', 'message' => "Please contact your administrator"],401);
+            return response()->json(['status' => 'ERR', 'message' => "Please contact your administrator"]);
         }
     }
 
+    public function update_profile(Request $request)
+    {
+        $user = $request->user;
+        $rules = array(
+            'name'       => 'required',
+            'email' => "required",
+            'mobile'    => "required",
+            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
+        );
+        $validate = \Myhelper::FormValidator($rules, $request);
+        if ($validate != "no") {
+            return $validate;
+        }
+        // $request->validate([
+        //     'name' => 'required|string|max:255',
+        //     'email' => 'required|email|max:255',
+        //     'mobile' => 'required|digits:10',
+        //     'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
+        // ]);
+
+
+
+
+        $exists = User::where(function ($query) use ($request, $user) {
+            $query->where('email', $request->email)
+                ->orWhere('mobile_no', $request->mobile);
+        })
+            ->where('id', '!=', $user->id)
+            ->where('status', '!=', 3)
+            ->exists();
+        if ($exists) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Email or Mobile already exists'
+            ], 422);
+        }
+        $user = User::find($request->user->id);
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->t_shirt_size = $request->t_shirt_size;
+        $user->mobile_no = $request->mobile;
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('uploads/profile_images'), $imageName);
+            $user->image = 'uploads/profile_images/' . $imageName;
+        }
+        if ($user->save()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Profile updated successfully',
+                'data' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'mobile' => $user->mobile_no,
+                    't_shirt_size' => $user->t_shirt_size,
+                    'image' => $user->image // Return full image URL
+                ]
+            ], 200);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Profile update failed. Please try again.'
+        ], 500);
+    }
+
+    public function add_helper(Request $request){
+
+        $user = $request->user;
+        $rules = array(
+            'name'       => 'required',
+            'age' => "required",
+            'mobile'    => "required",
+            'dob'    => "required",
+            'gender'    => "required",
+            'address'    => "required",
+            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
+        );
+        $validate = \Myhelper::FormValidator($rules, $request);
+        if ($validate != "no") {
+            return $validate;
+        }
+        $check_helper = DB::table('tbl_helpers')->where('mobile',$request->mobile)->first();
+        if($check_helper){
+            return response()->json([
+                'status'=>'error',
+                'message'=>'helper already exists.'
+            ]);
+        }
+        $image = '';
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('uploads/helper'), $imageName);
+            $image = 'uploads/helper/' . $imageName;
+        }
+        DB::table('tbl_helpers')->insert(['user_id'=>$request->user->id,'name'=>$request->name,'dob'=>$request->dob,'age'=>$request->age,'mobile'=>$request->mobile,'gender'=>$request->gender,'address'=>$request->address,'image'=>$image]);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'helper add successfully',
+        ], 200);
+    }
+
+    public function get_helper(Request $request){
+        $get_helper = DB::table('tbl_helpers')->where('user_id',$request->user->id)->where('status',1)->get();
+        return response()->json([
+            'status'=>'success',
+            'message' =>'helper fetched successfully',
+            'data' => $get_helper
+        ]);
+    }
+
+    public function delete_helper(Request $request ,$id){
+      $delete_helper = DB::table('tbl_helpers')->where('id',$id)->delete();
+      if($delete_helper){
+        return response()->json([
+            'status' => 'success',
+            'message' => 'helper deleted successfully',
+        ], 200);
+      }else{
+        return response()->json([
+            'status' => 'error',
+            'message' => 'helper not deleted!',
+        ], 200);
+      }
+    }
+
+
+    public function user_profile(Request $request)
+    {
+        $user_id = $request->user->id;
+        $user_details = User::where('id', $user_id)
+            ->first();
+        $role_details = DB::table('roles')
+            ->where('id', $request->user->role_id)
+            ->where('status', 1)
+            ->first();
+        if ($user_details) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'User profile',
+                'data' => $user_details,
+                'role' => $role_details->title,
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User not found'
+            ], 401);
+        }
+    }
+
+    public function get_kyc(Request $request){
+        $user_id = $request->user->id;
+        $kyc_details = Kycprocess::where('user_id', $user_id)->first();
+        // $kyc_details = DB::table('kycdatas')->where('user_id', $user_id)->first();
+        if ($kyc_details) {
+            return response()->json([
+               'status' =>'success',
+               'message' => 'KYC details',
+                'data' => $kyc_details
+            ], 200);
+        } else {
+            return response()->json([
+               'status' => 'error',
+               'message' => 'KYC details not found'
+            ], 401);
+        }
+    }
+
+
+
     public function update_kyc(Request $request)
     {
+
         $user = $request->user;
         $user_id = $user->id;
         $user_update = Kycprocess::where('user_id', $user_id)->first();
@@ -956,6 +359,31 @@ private function updateWalletsAndLogs($userId, $bookingId, $adminAmount, $postUs
             $user_update->kyc_status = 1;
             $user_update->user_id = $user_id;
         }
+        if ($request->name) {
+            $user_update->name = $request->name;
+        }
+
+        if ($request->mobile_no) {
+            $user_update->mobile_no = $request->mobile_no;
+        }
+
+        if ($request->email) {
+            $user_update->email = $request->email;
+        }
+
+        if ($request->date_of_birth) {
+            $user_update->date_of_birth = $request->date_of_birth;
+        }
+
+        if ($request->gender) {
+            $user_update->gender = $request->gender;
+        }
+
+        if ($request->is_personal_verified) {
+            $user_update->is_personal_verified = $request->is_personal_verified;
+        }
+
+
         if ($request->aadhar_no) {
             $user_update->aadhar_no = $request->aadhar_no;
         }
@@ -1016,19 +444,87 @@ private function updateWalletsAndLogs($userId, $bookingId, $adminAmount, $postUs
         if ($request->is_bank_verified) {
             $user_update->is_bank_verified = $request->is_bank_verified;
         }
+
+
+        if (!empty($request->lat) && !empty($request->long)) {
+            $apiKey = '9d52cf15543e4b1d9517f51ba60e6961';
+            $url = "https://api.opencagedata.com/geocode/v1/json?q={$request->lat}+{$request->long}&key={$apiKey}";
+            $response = file_get_contents($url);
+            $responseData = json_decode($response, true);
+
+            if (!empty($responseData['results'])) {
+                $addressComponents = $responseData['results'][0]['components'];
+                $user_update->normalized_city = $addressComponents['city'] ?? null;
+                $user_update->category = $addressComponents['_category'] ?? 'road';
+                $user_update->type = $addressComponents['_type'] ?? 'road';
+                $user_update->continent = $addressComponents['continent'] ?? null;
+                $user_update->country = $addressComponents['country'] ?? null;
+                $user_update->country_code = $addressComponents['country_code'] ?? null;
+                $user_update->county = $addressComponents['county'] ?? null;
+                $user_update->postcode = $addressComponents['postcode'] ?? null;
+                $user_update->road = $addressComponents['road'] ?? 'unnamed road';
+                $user_update->road_type = $addressComponents['road_type'] ?? 'residential';
+                $user_update->state = $addressComponents['state'] ?? null;
+                $user_update->state_code = $addressComponents['state_code'] ?? null;
+                $user_update->state_district = $addressComponents['state_district'] ?? null;
+                $user_update->suburb = $addressComponents['suburb'] ?? null;
+            }
+        }
+        if ($request->is_current_location_verified) {
+            $user_update->is_current_location_verified = $request->is_current_location_verified;
+        }
+
+        // if ($request->hasFile('equipment_image')) {
+        //     $file = $request->file('equipment_image');
+        //     $filePath = $file->store('kyc', 'public');
+        //     $user_update->equipment_image = $filePath;
+        // }
+        
+        if ($request->hasFile('equipment_image')) {
+    $filePaths = [];
+
+    foreach ($request->file('equipment_image') as $file) {
+        $filePaths[] = $file->store('kyc', 'public');
+    }
+
+    // Store file paths as JSON or an array depending on your database structure
+    $user_update->equipment_image = json_encode($filePaths); 
+}
+        
+        
+        
+        
+        
+        if ($request->is_equipment_verified) {
+            $user_update->is_equipment_verified = $request->is_equipment_verified;
+        }
+
         if ($request->hasFile('live_photo')) {
             $file = $request->file('live_photo');
             $filePath = $file->store('kyc', 'public');
             $user_update->live_photo = $filePath;
+        }
+        if ($request->is_live_photo_verified) {
+            $user_update->is_live_photo_verified = $request->is_live_photo_verified;
         }
         if ($request->hasFile('live_video')) {
             $file = $request->file('live_video');
             $filePath = $file->store('kyc', 'public');
             $user_update->live_video = $filePath;
         }
+        if ($request->is_live_video_verified) {
+            $user_update->is_live_video_verified = $request->is_live_video_verified;
+        }
+        if ($request->step) {
+            $user_update->step = $request->step;
+        }
+        if($request->kyc_status){
+            $user_update->kyc_status = $request->kyc_status;
+        }
         $user_update->save();
         return response()->json(['status' => 'OK', 'message' => "KYC updated successfully"]);
     }
+
 
     public function get_services()
     {
@@ -1047,6 +543,7 @@ private function updateWalletsAndLogs($userId, $bookingId, $adminAmount, $postUs
         if (!empty($get_package)) {
             foreach ($get_package as $pack) {
                 $pack->service = DB::table('add_package_service as a')->leftJoin('services as b', 'b.id', '=', 'a.service_id')->select('a.package_id', 'a.service_id', 'b.*')->where('a.status', 1)->where('b.status', 1)->where('a.package_id', $pack->id)->get();
+                $pack->images = DB::table('packages_image')->where('status', 1)->where('package_id', $pack->id)->get();
                 $add_package_service[] = $pack;
             }
         }
@@ -1060,52 +557,72 @@ private function updateWalletsAndLogs($userId, $bookingId, $adminAmount, $postUs
 
     public function create_pet(Request $request)
     {
-        $rules = array(
-            'pet_name'       => 'required',
-            'pet_image' => "required",
-        );
+        // Define validation rules
+        $rules = [
+            'pet_name'   => 'required',
+            'pet_image'  => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'gender'     => 'required|string|max:255',
+            'pet_type'   => 'required|string|max:255',
+            'breed'      => 'required|string|max:255',
+            'weight'     => 'required|integer',
+            'age'         => 'required',
+            'aggression' => 'required|string|max:255',
+            'vaccinated' => 'required|string',
+        ];
+
+        // Validate the request data
         $validate = \Myhelper::FormValidator($rules, $request);
         if ($validate != "no") {
             return $validate;
         }
+
+        // Check for existing data
         $check_data = $this->check_exist_data($request, null);
         if ($check_data) {
             $message = '';
-            if ($check_data->title == $request->pet_name) {
+            if ($check_data->pet_name == $request->pet_name) {
                 $message .= "Pet Category ";
             }
             if ($message) {
                 return response()->json(['status' => 'Error', 'message' => $message . 'already exists.']);
             }
         }
-        $pet = new PetCategory();
-        if ($request->pet_name) {
-            $pet->title = $request->pet_name;
-        }
+
+        // Create a new Pets instance
+        $pet = new Pets();
         $pet->user_id = $request->user->id;
+
+        // Handle the pet image upload
         if ($request->hasFile('pet_image')) {
             $file = $request->file('pet_image');
             $filePath = $file->store('pet_category', 'public');
             $pet->image = $filePath;
         }
-        if ($request->pet_size) {
-            $pet->pet_size = $request->pet_size;
-        }
-        if ($request->pet_bred) {
-            $pet->pet_bred = $request->pet_bred;
-        }
+
+        // Assign additional fields
+        $pet->gender = $request->gender;
+        $pet->pet_name = $request->pet_name;
+        $pet->pet_type = $request->pet_type;
+        $pet->breed = $request->breed;
+        $pet->weight = $request->weight;
+        $pet->age = $request->age;
+        $pet->aggression = $request->aggression;
+        $pet->vaccinated = $request->vaccinated;
+
+        // Save the new pet category
         $pet->save();
-        return response()->json(['status' => 'OK', 'message' => "Pet Add Successfully"]);
+
+        return response()->json(['status' => 'OK', 'message' => "Pet added successfully"]);
     }
+
 
     public function list_pet(Request $request)
     {
-        $get_pet = PetCategory::where('user_id', $request->user->id)->where('status', 1)->get();
+        $get_pet = Pets::where('user_id', $request->user->id)->where('status', 1)->get();
         if ($get_pet) {
             return response()->json(['status' => 'Success', 'message' => 'Pet List Successfully', 'data' => $get_pet]);
         }
     }
-
     public function update_pet(Request $request, $id)
     {
         if (!$id) {
@@ -1113,7 +630,7 @@ private function updateWalletsAndLogs($userId, $bookingId, $adminAmount, $postUs
         }
         if ($request->method() == "GET") {
             if (!empty($id)) {
-                $get_single_pet = PetCategory::where('id', $id)->where('status', 1)->get();
+                $get_single_pet = Pets::where('id', $id)->where('status', 1)->get();
                 if ($get_single_pet) {
                     return response()->json(['status' => 'Success', 'message' => 'Single Pet Fetch Successfully', 'data' => $get_single_pet]);
                 }
@@ -1121,57 +638,267 @@ private function updateWalletsAndLogs($userId, $bookingId, $adminAmount, $postUs
         }
 
         if ($request->method() == "POST") {
-            $rules = array(
-                'pet_name'       => 'required',
-            );
+            // Define validation rules
+            $rules = [
+                'pet_name'   => 'required',
+                'pet_image'  => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'gender'     => 'required|string|max:255',
+                'pet_type'   => 'required|string|max:255',
+                'breed'      => 'required|string|max:255',
+                'weight'     => 'required|integer',
+                'age'         => 'required|integer',
+                'aggression' => 'required|string|max:255',
+                'vaccinated' => 'required|string',
+            ];
+
+            // Validate the request data
             $validate = \Myhelper::FormValidator($rules, $request);
             if ($validate != "no") {
                 return $validate;
             }
+
+            // Check for existing data
             $check_data = $this->check_exist_data($request, $id);
             if ($check_data) {
                 $message = '';
-                if ($check_data->title == $request->pet_name) {
+                if ($check_data->pet_name == $request->pet_name) {
                     $message .= "Pet Category ";
                 }
                 if ($message) {
                     return response()->json(['status' => 'ERR', 'message' => "Pet Category Already Exists"]);
                 }
             }
-            $pet = PetCategory::findOrfail($id);
 
-            if ($request->pet_name) {
-                $pet->title = $request->pet_name;
-            }
+            // Find the pet category by ID
+            $pet = Pets::findOrFail($id);
+
+            // Update the pet category details
+            $pet->pet_name = $request->pet_name;
             $pet->user_id = $request->user->id;
+
+            // Handle the pet image upload
             if ($request->hasFile('pet_image')) {
                 $file = $request->file('pet_image');
                 $filePath = $file->store('pet_category', 'public');
                 $pet->image = $filePath;
             }
-            if ($request->pet_size) {
-                $pet->pet_size = $request->pet_size;
-            }
-            if ($request->pet_bred) {
-                $pet->pet_bred = $request->pet_bred;
-            }
+
+            // Assign additional fields
+            $pet->gender = $request->gender;
+            $pet->pet_type = $request->pet_type;
+            $pet->breed = $request->breed;
+            $pet->weight = $request->weight;
+            $pet->age = $request->age;
+            $pet->aggression = $request->aggression;
+            $pet->vaccinated = $request->vaccinated;
+
+            // Save the updated pet category
             $pet->save();
-            return response()->json(['status' => 'OK', 'message' => "Pet Update Successfully"]);
+
+            return response()->json(['status' => 'OK', 'message' => "Pet Updated Successfully"]);
+        }
+    }
+
+    public function create_booking(Request $request)
+    {
+        $rules = array(
+            'cart_id'       => 'required',
+            'address_id'       => 'required',
+            'booking_date'       => 'required',
+            'booking_time'       => 'required',
+
+        );
+        $validate = \Myhelper::FormValidator($rules, $request);
+        if ($validate != "no") {
+            return $validate;
+        }
+        if(!empty($request->cart_id)){
+            for($i=0; count($request->cart_id)>$i; $i++){
+            $cart_id = '';
+            $cart_id = $request->cart_id[$i];
+            $address_id = $request->address_id;
+            $booking_date = $request->booking_date;
+            $booking_time = $request->booking_time;
+            $description  = $request->description;
+            $booking_amount  = $request->booking_amount;
+            $tax_amount  = $request->tax_amount;
+            $total_amount  = $request->total_amount;
+            $get_cart = DB::table('tbl_cart')->where('id',$cart_id)->where('status',1)->first();
+            if(!$get_cart){
+                return response()->json(['status' => 'Error', 'message' => 'Cart Service Not Found']);
+
+            }
+            $get_service = DB::table('packages')->where('id',$get_cart->service_id)->where('status',1)->first();
+            if(!$get_service){
+                return response()->json(['status' => 'Error', 'message' => ' Service Not Found']);
+
+            }
+            $get_booking_amount  = $get_cart->charge;
+            $get_tax  = $get_service->tax;
+            $get_tax_amount = $get_service->$get_booking_amount * ($get_tax / 100);
+            $get_final_tax_amount  = number_format($get_tax_amount);
+            $get_address  = DB::table('tbl_address')->where('status', 1)->where('id', $address_id)->where('user_id', $request->user->id)->first();
+            if(!$get_address){
+                return response()->json(['status' => 'Error', 'message' => ' Address Not Found']);
+
+            }
+            // $insert_booking_id = '';
+            $insert_booking_id = DB::table('tbl_pet_bookings')->insertGetId([
+                'cart_id' => $cart_id,
+                'package_id' => $get_cart->service_id,
+                'package_name' => $get_service->title,
+                'booking_date' => $booking_date,
+                'booking_time' => $booking_time,
+                'booking_amount' => $get_service->$get_booking_amount,
+                'tax_amount' => $get_final_tax_amount,
+                'total_amount' => $get_service->$get_booking_amount + $get_final_tax_amount,
+                'description' => $description,
+                'customer_id' => $request->user->id,
+                'flat_house_no' => $get_address->flat_house_no,
+                'area_sector_locality' => $get_address->area_sector_locality,
+                'city_district' => $get_address->city_district,
+                'state' => $get_address->state,
+                'pincode' => $get_address->pincode,
+                'complete_address' => $get_address->complete_address,
+                'email_address' => $get_address->email_address
+            ]);
+            $remove_cart = DB::table('tbl_cart')->where('id',$cart_id)->update(['status'=>3]);
+            GlobalHelper::SaveNotification($insert_booking_id,$request->user->id,1,'buy package');
+        }
+        }
+
+        if ($insert_booking_id) {
+            return response()->json(['status' => 'OK', 'message' => 'Booking created successfully']);
+        } else {
+            return response()->json(['status' => 'Error', 'message' => 'Failed to create booking']);
+        }
+    }
+
+    public function cancel_booking(Request $request , $id){
+
+        $insert_cancel = DB::table('tbl_booking_log')->insert(['user_id'=>$request->user->id,'booking_id'=>$id,'type'=>1]);
+        if($insert_cancel){
+            return response()->json(['status' => 'OK', 'message' => 'Booking cancel successfully'], 200);
+        }else{
+            return response()->json(['status' => 'Error', 'message' => 'Error']);
+        }
+    }
+
+   public function my_booking(Request $request){
+        $get_array = DB::table('tbl_pet_bookings as a')->leftJoin('users as b','a.accept_user_id','=','b.id')->select('a.*','b.name as user_name','b.mobile_no as user_mobile','b.image as user_profile_img')->where('a.customer_id',$request->user->id)->where('a.status', 1)->orderBy('a.id', 'desc')->get();
+
+        if(!empty($get_array)){
+            $get_book = [];
+            foreach($get_array as $book ){
+               $note_data = DB::table('tbl_notification')->where('booking_id',$book->id)->where('status',1)->get();
+               $new_arr = [];
+               foreach($note_data as $note){
+                $note->user = DB::table('users')->select('name','email','mobile_no')->where('id',$note->user_id)->where('status',1)->first();
+                $note->package_info = DB::table('packages')->where('id',$book->package_id)->where('status',1)->first();
+
+                $new_arr[] = $note;
+               }
+               $book->notification = $new_arr;
+               $get_book[] = $book;
+            }
+        }
+        return response()->json(['status' => 'OK', 'message' => 'Booking fetched successfully', 'data' => $get_book], 200);
+    }
+
+    public function my_booking_groomer(Request $request){
+        $get_array = DB::table('tbl_pet_bookings as a')->leftJoin('users as b','a.customer_id','=','b.id')->select('a.*','b.name as user_name','b.mobile_no as user_mobile','b.image as user_profile_img')->where('a.accept_user_id',$request->user->id)->where('a.status', 1)->orderBy('a.id', 'desc')->get();
+
+        if(!empty($get_array)){
+            $get_book = [];
+            foreach($get_array as $book ){
+               $note_data = DB::table('tbl_notification')->where('booking_id',$book->id)->where('status',1)->get();
+               $new_arr = [];
+               foreach($note_data as $note){
+                $note->user = DB::table('users')->select('name','email','mobile_no')->where('id',$note->user_id)->where('status',1)->first();
+                $note->package_info = DB::table('packages')->where('id',$book->package_id)->where('status',1)->first();
+                $new_arr[] = $note;
+               }
+               $book->notification = $new_arr;
+               $get_book[] = $book;
+            }
+        }
+        return response()->json(['status' => 'OK', 'message' => 'Booking fetched successfully', 'data' => $get_book], 200);
+    }
+
+    public function fetch_booking(Request $request)
+    {
+        $get_booking_log = DB::table('tbl_booking_log')->where('user_id', $request->user->id)->where('type',1)->get();
+        $booking_id = '';
+        foreach ($get_booking_log as $log) {
+            $booking_id .= $log->booking_id . ',';
+        }
+        $string = rtrim($booking_id, ',');
+        $booking_ids = explode(',', $string);
+        $book = DB::table('tbl_pet_bookings as a')
+            ->where('a.status', 1)
+            ->whereIn('a.booking_status', [1, 3])
+            ->whereNotIn('a.id', $booking_ids)
+            ->orderBy('a.id', 'desc')
+            ->get();
+        if ($book->isNotEmpty()) {
+            return response()->json(['status' => 'OK', 'message' => 'Booking fetched successfully', 'data' => $book]);
+        } else {
+            return response()->json(['status' => 'Error', 'message' => 'No booking found']);
         }
     }
 
 
+    public function fetch_pet_category(Request $request)
+    {
 
+        $fetch_pet_category = DB::table('pet_category')->where('status', 1)->orderBy('id', 'desc')->get();
+        if (!empty($fetch_pet_category)) {
 
+            return response()->json(['status' => 'OK', 'message' => ' fetched Pet Category successfully', 'data' => $fetch_pet_category]);
+        } else {
+            return response()->json(['status' => 'Error', 'message' => 'No booking found']);
+        }
+    }
+
+    public function accept_booking(Request $request)
+    {
+
+        $rules = array(
+            'id'       => 'required',
+            'booking_status'       => 'required'
+        );
+        $validate = \Myhelper::FormValidator($rules, $request);
+        if ($validate != "no") {
+            return $validate;
+        }
+        if ($request->user->role_id != 5) {
+            DB::table('tbl_pet_bookings')
+                ->where('id', $request->id)
+                ->update(['accept_user_id' => $request->user->id,'booking_status'=>$request->booking_status]);
+            $insert_cancel = DB::table('tbl_booking_log')->insert(['user_id'=>$request->user->id,'booking_id'=>$request->id,'type'=>2]);
+            $subject = '';
+            if($request->booking_status == 2){
+                $subject = 'accept booking';
+            }
+            if($request->booking_status == 3){
+                $subject = 'cancel booking';
+            }
+            if($request->booking_status == 4){
+                $subject = 'complete booking';
+            }
+            GlobalHelper::SaveNotification($request->id,$request->user->id,$request->booking_status,$subject);
+        }
+        return response()->json(['status' => 'OK', 'message' => 'Booking status updated successfully']);
+    }
 
     public function check_exist_data($request, $id)
     {
-        $query = PetCategory::where('status', '!=', 3);
+        $query = Pets::where('status', '!=', 3);
         if ($id !== null) {
             $query->where('id', '!=', $id);
         }
         $check_pet_category = $query->where(function ($q) use ($request) {
-            $q->where('title', $request->pet_name);
+            $q->where('pet_name', $request->pet_name)->where('user_id', $request->user->id);
         })->first();
 
         return $check_pet_category;
@@ -1179,605 +906,285 @@ private function updateWalletsAndLogs($userId, $bookingId, $adminAmount, $postUs
 
     public function delete_pet(Request $request)
     {
-        $update_pet_status = PetCategory::where('id', $request->id)->update(['status' => 3]);
+        $update_pet_status = Pets::where('id', $request->id)->update(['status' => 3]);
         if ($update_pet_status) {
-            return response()->json(['message' => 'Pet deleted successfully.'], 200);
+            return response()->json(['status' => 'OK', 'message' => 'Pet deleted successfully.'], 200);
         }
     }
 
-    public function fetch_company_info()
+    public function add_to_cart(Request $request, $id, $price)
     {
-        $company_info = CmsModal::where('status', 1)->first();
-        if ($company_info) {
-            return response()->json(['status' => 'OK', 'message' => 'Company Info fetched successfully', 'data' => $company_info], 200);
-        } else {
-            return response()->json(['status' => 'Error', 'message' => 'Company Info not found']);
-        }
-    }
-
-    public function fetch_category()
-    {
-        $get_category = CategoriesModal::where('status', 1)->get();
-        if ($get_category) {
-            return response()->json(['status' => 'OK', 'message' => 'Category fetched successfully', 'data' => $get_category], 200);
-        } else {
-            return response()->json(['status' => 'Error', 'message' => 'Company Info not found']);
-        }
-    }
-
-    public function fetch_property(Request $request)
-    {
-
-        if (isset($request->user->id) && $request->user->id) {
-            $user_id = $request->user->id;
-        } else {
-            $user_id = "";
-        }
-        if (!isset($request->type)) {
-            return response()->json(['status' => 'Error', 'message' => 'Type is required'], 400);
-        }
-        $type = $request->type;
-        $get_category = CategoriesModal::where('status', 1)
-            ->when($type != "all", function ($query) use ($type) {
-                $query->where('id', $type);
-            });
-        $get_cate = $get_category->orderBy('id', 'asc')->get();
-        $new_property_get = array();
-        foreach ($get_cate as $row) {
-            if (!empty($user_id)) {
-                $get_property = DB::table('properties as p')->leftJoin('categories as pg', 'p.category_id', '=', 'pg.id')->leftJoin('whislist_property as c', 'p.id', '=', 'c.property_id')->select('p.*', 'pg.title as category_name', 'c.status as whislist_status')->where('p.status', 1)->where('pg.status', 1)->where('p.category_id', $row->id)->where('p.is_property_verified', 1)->get();
-            } else {
-                $get_property = DB::table('properties as p')->leftJoin('categories as pg', 'p.category_id', '=', 'pg.id')->select('p.*', 'pg.title as category_name')->where('p.status', 1)->where('pg.status', 1)->where('p.category_id', $row->id)->where('p.is_property_verified', 1)->get();
-            }
-            $get_fac = array();
-            foreach ($get_property as $property) {
-                $get_faciflties = DB::table('add_facilities_propery as a')->leftJoin('facilities as b', 'a.facilities_id', '=', 'b.id')->select('a.facilities_id', 'b.title as facility_name', 'a.value as facility_value', 'b.image as facility_image')->where('a.status', 1)->where('b.status', 1)->where('a.property_id', $property->id)->get();
-                $get_amentities = DB::table('add_amenties as a')->leftJoin('amenities as b', 'a.amenities_id', '=', 'b.id')->select('a.amenities_id', 'b.title as amenities_name', 'b.image as amenities_image')->where('a.status', 1)->where('b.status', 1)->where('a.property_id', $property->id)->get();
-                $get_sub_img = DB::table('properties_images')->where('property_id', $property->id)->where('status', 1)->get();
-                $property->facilities = $get_faciflties;
-                $property->amenities = $get_amentities;
-                $property->sub_img =  $get_sub_img;
-                $get_fac[] = $property;
-            }
-
-            $row->property = $get_property;
-            $new_property_get[] = $row;
-        }
-        return response()->json(['status' => 'Success', 'data' => $new_property_get], 200);
-    }
-
-
-    public function fetch_testimonial()
-    {
-        $get_testimonial = Testimonal::where('status', 1)->get();
-        if ($get_testimonial) {
-            return response()->json(['status' => 'OK', 'message' => 'Testimonial fetched successfully', 'data' => $get_testimonial], 200);
-        } else {
-            return response()->json(['status' => 'Error', 'message' => 'Testimonial not found']);
-        }
-    }
-
-    public function fetch_blog(Request $request)
-    {
-        $get_blog = Blog::where('status', 1);
-        if ($request->id) {
-            $get_blog->where('id', $request->id);
-        }
-        $get_blog = $get_blog->get();
-        if ($get_blog) {
-            return response()->json(['status' => 'OK', 'message' => 'Blog fetched successfully', 'data' => $get_blog], 200);
-        } else {
-            return response()->json(['status' => 'Error', 'message' => 'Blog not found']);
-        }
-    }
-
-    public function fetch_banner(Request $request)
-    {
-
-        $get_banner = Banner::where('status', 1)->where('type', $request->type)->get();
-        if ($get_banner) {
-            return response()->json(['status' => 'OK', 'message' => 'Banner fetched successfully', 'data' => $get_banner], 200);
-        } else {
-            return response()->json(['status' => 'Error', 'message' => 'Banner not found']);
-        }
-    }
-
-    public function fetch_seo(Request $request)
-    {
-        $get_seo = Seo::where('status', 1)->where('url', $request->url)->first();
-        if ($get_seo) {
-            return response()->json(['status' => 'OK', 'message' => 'SEO fetched successfully', 'data' => $get_seo], 200);
-        } else {
-            return response()->json(['status' => 'Error', 'message' => 'SEO not found']);
-        }
-    }
-
-    public function fetch_gallary(Request $request)
-    {
-        $get_gallary = Gallary::where('status', 1)->get();
-        if ($get_gallary) {
-            return response()->json(['status' => 'OK', 'message' => 'Gallery fetched successfully', 'data' => $get_gallary], 200);
-        } else {
-            return response()->json(['status' => 'Error', 'message' => 'Gallery not found']);
-        }
-    }
-
-    public function fetch_pages(Request $request)
-    {
-
-        $get_page = Page::where('page_name', $request->page_name)->first();
-        if ($get_page) {
-            return response()->json(['status' => 'OK', 'message' => 'Page fetched successfully', 'data' => $get_page], 200);
-        } else {
-            return response()->json(['status' => 'Error', 'message' => 'Page not found']);
-        }
-    }
-
-    public function send_enquiry(Request $request)
-    {
-        $company_info = CmsModal::where('status', 1)->first();
-        if ($request->name == '') {
-            return response()->json(['status' => 'Error', 'message' => 'Name is required'], 400);
-        }
-
-        if ($request->email == '' || !filter_var($request->email, FILTER_VALIDATE_EMAIL)) {
-            return response()->json(['status' => 'Error', 'message' => 'A valid email is required'], 400);
-        }
-
-        if ($request->mobile_no == '' || !preg_match('/^\d{10}$/', $request->mobile_no)) {
-            return response()->json(['status' => 'Error', 'message' => 'Mobile number must be a 10-digit integer'], 400);
-        }
-
-        Mail::to($company_info->email)->send(new Enquirys($request));
-        $enc = new Enquiry();
-        $enc->name = $request->name;
-        $enc->email = $request->email;
-        $enc->mobile_no = $request->mobile_no;
-        $enc->message = $request->message;
-        if ($request->property_id) {
-            $enc->property_id = $request->property_id;
-        }
-        if ($request->location) {
-            $enc->location = $request->location;
-        }
-        if ($request->budget) {
-            $enc->budget = $request->budget;
-        }
-        if ($request->plan_date) {
-            $enc->plan_date = $request->plan_date;
-        }
-        $enc->save();
-        DB::table('notes')->insert(['loan_request_id' => $enc->id, 'user_id' => 1, 'loan_status' => 1, 'title' => "Initial Stage"]);
-        return response()->json(['status' => 'OK', 'message' => 'Enquiry sent successfully'], 200);
-    }
-
-    public function post_review(Request $request)
-    {
-        $user_id = $request->user->id;
-        $review = new PropertyReview();
-        $review->user_id = $user_id;
-        $review->review = $request->review;
-        $review->rating = $request->rating;
-        $review->save();
-        return response()->json(['status' => 'OK', 'message' => 'Review posted successfully'], 200);
-    }
-
-    public function fetch_review()
-    {
-        $reviews = DB::table('property_reviews as a')->join('users as b', 'a.user_id', '=', 'b.id')->select('a.*', 'b.name as user_name', 'b.image as user_image')->where('a.status', 1)->where('b.status', 1)->get();
-        if ($reviews) {
-            return response()->json(['status' => 'OK', 'data' => $reviews], 200);
-        } else {
-            return response()->json(['status' => 'Error', 'message' => 'No reviews found'], 404);
-        }
-    }
-
-
-    public function property_whislist(Request $request)
-    {
-
-        $check_whislist = DB::table('whislist_property')->where('user_id', $request->user->id)->where('property_id', $request->property_id)->first();
-        $add_whislist = DB::table('whislist_property')->insert(['user_id' => $request->user->id, 'property_id' => $request->property_id]);
-        if ($check_whislist) {
-            if ($check_whislist->status == 1) {
-                $update_whislist_status = DB::table('whislist_property')->where('user_id', $request->user->id)->where('property_id', $request->property_id)->update(['status' => 2]);
-            } else {
-                $update_whislist_status = DB::table('whislist_property')->where('user_id', $request->user->id)->where('property_id', $request->property_id)->update(['status' => 1]);
-            }
-        } else {
-            if ($add_whislist) {
-                return response()->json(['status' => 'OK', 'message' => 'Property whitelisted successfully'], 200);
-            } else {
-                return response()->json(['status' => 'Error', 'message' => 'Failed to whitelist property'], 500);
-            }
-        }
-    }
-
-    public function fetch_single_property(Request $request, $id)
-    {
-        if (isset($request->user->id) && $request->user->id) {
-            $user_id = $request->user->id;
-        } else {
-            $user_id = "";
-        }
-        if (!isset($request->cat)) {
-            return response()->json(['status' => 'Error', 'message' => 'Type is required'], 400);
-        }
-        $type = $request->cat;
-        $get_category = CategoriesModal::where('status', 1)
-            ->when($type != "all", function ($query) use ($type) {
-                $query->where('id', $type);
-            });
-        $get_cate = $get_category->orderBy('id', 'asc')->get();
-        $new_property_get = array();
-        foreach ($get_cate as $row) {
-            if (!empty($user_id)) {
-                $get_property = DB::table('properties as p')->leftJoin('categories as pg', 'p.category_id', '=', 'pg.id')->leftJoin('whislist_property as c', 'p.id', '=', 'c.property_id')->select('p.*', 'pg.title as category_name', 'c.status as whislist_status')->where('p.status', 1)->where('pg.status', 1)->where('p.category_id', $row->id)->where('p.is_property_verified', 1)->where('p.id', $id)->get();
-            } else {
-                $get_property = DB::table('properties as p')->leftJoin('categories as pg', 'p.category_id', '=', 'pg.id')->select('p.*', 'pg.title as category_name')->where('p.status', 1)->where('pg.status', 1)->where('p.category_id', $row->id)->where('p.is_property_verified', 1)->where('p.id', $id)->get();
-            }
-            $get_fac = array();
-            foreach ($get_property as $property) {
-                $get_faciflties = DB::table('add_facilities_propery as a')->leftJoin('facilities as b', 'a.facilities_id', '=', 'b.id')->select('a.facilities_id', 'b.title as facility_name', 'a.value as facility_value', 'b.image as facility_image')->where('a.status', 1)->where('b.status', 1)->where('a.property_id', $property->id)->get();
-                $get_amentities = DB::table('add_amenties as a')->leftJoin('amenities as b', 'a.amenities_id', '=', 'b.id')->select('a.amenities_id', 'b.title as amenities_name', 'b.image as amenities_image')->where('a.status', 1)->where('b.status', 1)->where('a.property_id', $property->id)->get();
-                $get_sub_img = DB::table('properties_images')->where('property_id', $property->id)->where('status', 1)->get();
-                $reviews = DB::table('property_reviews as a')
-                    ->join('users as b', 'a.user_id', '=', 'b.id')
-                    ->leftJoin('properties as c', 'c.id', '=', 'a.property_id') // Added left join
-                    ->select(
-                        'a.*',
-                        'b.name as user_name',
-                        'b.image as user_image'
-                    )
-                    ->where('a.status', 1)
-                    ->where('b.status', 1)
-                    ->where('c.status', 1)
-                    ->where('a.property_id', $property->id)
-                    ->get();
-                $property->facilities = $get_faciflties;
-                $property->amenities = $get_amentities;
-                $property->sub_img =  $get_sub_img;
-                $property->review =  $reviews;
-                $get_fac[] = $property;
-            }
-
-            $row->property = $get_property;
-            $new_property_get[] = $row;
-        }
-        return response()->json(['status' => 'Success', 'data' => $new_property_get], 200);
-    }
-
-    public function permission(Request $request)
-    {
-        $role_id = $request->user->role_id;
-        $permission_name = $request->title;
-        try {
-            // Fetch the permission data from the database
-            $get_permission = DB::table('role_permission as a')
-                ->join('permissions as b', 'a.permission_id', '=', 'b.id')
-                ->join('permission_category as c', 'b.per_cate_id', '=', 'c.id')
-                ->select('a.*', 'b.title', 'c.category_name')
-                ->where('a.status', 1)
-                ->where('b.status', 1)
-                ->where('c.status', 1)
-                ->where('a.role_id', $role_id)
-                ->where('b.title', $permission_name)
-                ->first();
-
-            // Check if permission data exists and if the permission_status is 1
-            if ($get_permission && $get_permission->permission_status == 1) {
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Permission granted',
-                    'permission_status' => 1
-                ], 200);
-            }
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Permission denied',
-                'permission_status' => 2
-            ], 200);
-        } catch (\Exception $e) {
-            // Handle errors and return a proper response
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Something went wrong: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function update_profile(Request $request)
-    {
-
-        $user_id = $request->user->id;
-        $user = User::findOrFail($request->user->id);
-        if ($request->name) {
-            $user->name = $request->name;
-        }
-        if ($request->email) {
-            $user->email = $request->email;
-        }
-        if ($request->mobile_no) {
-            $user->mobile_no = $request->mobile_no;
-        }
-        if ($request->vehicle_type) {
-            $user->vehicle_type = $request->vehicle_type;
-        }
-        if ($request->vehicle_number) {
-            $user->vehicle_number = $request->vehicle_number;
-        }
-        if ($request->lat) {
-            $user->lat = $request->lat;
-        }
-        if ($request->long) {
-            $user->long = $request->long;
-        }
-        // if(!empty($request->lat) && !empty($request->long) ){
-        //     $apiKey = '9d52cf15543e4b1d9517f51ba60e6961';
-        //     $url = "https://api.opencagedata.com/geocode/v1/json?q={$request->lat}+{$request->long}&key={$apiKey}";
-        //     $response = file_get_contents($url);
-        //     $responseData = json_decode($response, true);
-        //     if (!empty($responseData['results'])) {
-        //         foreach ($responseData['results'][0]['components'] as $key => $value) {
-        //             if ($key === 'postcode') {
-        //               $user->pincode = $value;
-        //             }
-        //         }
-        //     }
+        $check_cart = DB::table('tbl_cart')->where('user_id', $request->user->id)->where('service_id', $id)->first();
+        // if ($check_cart) {
+        //     $add_cart = DB::table('tbl_cart')
+        //         ->where('id', $check_cart->id)
+        //         ->update(['charge' => $price]);
+        //     return response()->json(['status' => 'Exist', 'message' => 'Service already added to cart.'], 200);
         // }
+        $add_cart = DB::table('tbl_cart')->insert(['user_id' => $request->user->id, 'charge' => $price, 'service_id' => $id]);
+        if ($add_cart) {
+            return response()->json(['status' => 'OK', 'message' => 'Service added to cart successfully.'], 200);
+        } else {
+            return response()->json(['status' => 'Error', 'message' => 'Failed to add service to cart.'], 501);
+        }
+    }
+    public function get_cart_services(Request $request)
+    {
+        $cart_services = DB::table('tbl_cart as a')
+            ->join('packages as b', 'a.service_id', '=', 'b.id')
+            ->select('b.*', 'a.id as cart_id', 'a.charge as price')->where('b.status', 1)->where('a.user_id',$request->user->id)->where('a.status',1)
+            ->get();
+        return response()->json(['status' => 'OK', 'data' => $cart_services], 200);
+    }
+    public function delete_cart_service(Request $request, $id)
+    {
+        $delete_cart_service = DB::table('tbl_cart')->where('id', $id)->update(['status'=>3]);
+        if ($delete_cart_service) {
+            return response()->json(['status' => 'OK', 'message' => 'Service deleted from cart successfully.'], 200);
+        } else {
+            return response()->json(['status' => 'OK', 'message' => 'Failed to delete service from cart.'], 500);
+        }
+    }
+
+    public function add_address(Request $request)
+    {
+
+        $rules = [
+            'flat_house_no'         => 'required|string',
+            'area_sector_locality'  => 'required|string',
+            'city_district'         => 'required|string',
+            'state'                 => 'required|string',
+            'pincode'               => 'required|digits:6',
+            'complete_address'      => 'required|string',
+            'email_address'         => 'nullable|email'
+        ];
+        $validate = \Myhelper::FormValidator($rules, $request);
+        if ($validate != "no") {
+            return $validate;
+        }
+        $inserted = DB::table('tbl_address')->insert([
+            'user_id'               => $request->user->id,
+            'flat_house_no'         => $request->flat_house_no,
+            'area_sector_locality'  => $request->area_sector_locality,
+            'city_district'         => $request->city_district,
+            'state'                 => $request->state,
+            'pincode'               => $request->pincode,
+            'complete_address'      => $request->complete_address,
+            'email_address'         => $request->email_address
+        ]);
+        if ($inserted) {
+            return response()->json(['status' => 'OK', 'message' => 'Address added successfully.'], 200);
+        } else {
+            return response()->json(['status' => 'Error', 'message' => 'Failed to add address.'], 500);
+        }
+    }
+
+    public function get_address(Request $request)
+    {
+        $addresses = DB::table('tbl_address')->where('status', 1)->where('user_id',$request->user->id)->get();
+        return response()->json(['status' => 'OK', 'data' => $addresses], 200);
+    }
+
+    public function delete_address(Request $request, $id)
+    {
+        $deleted = DB::table('tbl_address')->where('id', $id)->update(['status'=>3]);
+
+        if ($deleted) {
+            return response()->json(['status' => 'OK', 'message' => 'Address deleted successfully.'], 200);
+        } else {
+            return response()->json(['status' => 'Error', 'message' => 'Failed to delete address.'], 500);
+        }
+    }
+
+    public function get_location(Request $request)
+    {
+        $rules = [
+            'lat'         => 'required|string',
+            'long'  => 'required|string'
+        ];
+        $validate = \Myhelper::FormValidator($rules, $request);
+        if ($validate != "no") {
+            return $validate;
+        }
+        $apiKey = '9d52cf15543e4b1d9517f51ba60e6961';
+        $url = "https://api.opencagedata.com/geocode/v1/json?q={$request->lat}+{$request->long}&key={$apiKey}";
+        $response = file_get_contents($url);
+        $responseData = json_decode($response, true);
+        if (!empty($responseData['results'])) {
+            $location = $responseData['results'][0]['formatted'];
+            return response()->json(['status' => 'OK', 'data' => $responseData], 200);
+        } else {
+            return response()->json(['status' => 'Error', 'data' => 'Location not found.'], 404);
+        }
+    }
+
+    public function update_current_location(Request $request)
+    {
+        $user = User::findOrFail($request->user->id);
         if (!empty($request->lat) && !empty($request->long)) {
             $apiKey = '9d52cf15543e4b1d9517f51ba60e6961';
             $url = "https://api.opencagedata.com/geocode/v1/json?q={$request->lat}+{$request->long}&key={$apiKey}";
-
-
-            // Fetch API response
             $response = file_get_contents($url);
             $responseData = json_decode($response, true);
 
             if (!empty($responseData['results'])) {
                 $addressComponents = $responseData['results'][0]['components'];
+                $user->_normalized_city = $addressComponents['city'] ?? null;
+                $user->_category = $addressComponents['_category'] ?? 'road';
+                $user->_type = $addressComponents['_type'] ?? 'road';
+                $user->continent = $addressComponents['continent'] ?? null;
+                $user->country = $addressComponents['country'] ?? null;
+                $user->country_code = $addressComponents['country_code'] ?? null;
+                $user->county = $addressComponents['county'] ?? null;
+                $user->postcode = $addressComponents['postcode'] ?? null;
+                $user->road = $addressComponents['road'] ?? 'unnamed road';
+                $user->road_type = $addressComponents['road_type'] ?? 'residential';
+                $user->state = $addressComponents['state'] ?? null;
+                $user->state_code = $addressComponents['state_code'] ?? null;
+                $user->state_district = $addressComponents['state_district'] ?? null;
+                $user->suburb = $addressComponents['suburb'] ?? null;
             }
-            // Save pincode
-            if (isset($addressComponents['postcode'])) {
-                $user->pincode = $addressComponents['postcode'];
-            }
-
-            // Save formatted address
-            if (isset($responseData['results'][0]['formatted'])) {
-                $user->address = $responseData['results'][0]['formatted'];
-            }
-
-            // Save other components if needed
-            $user->city = $addressComponents['city'] ?? null;
-            $user->state = $addressComponents['state'] ?? null;
-            $user->country = $addressComponents['country'] ?? null;
         }
-        if ($request->gst_no) {
-            $user->gst_no = $request->gst_no;
-        }
-        if ($request->status) {
-            $user->status = $request->status;
-        }
-
         $user->save();
         return response()->json(['status' => 'OK', 'message' => 'Profile updated successfully'], 200);
     }
 
-    public function booking(Request $request)
+    public function get_pages(Request $request, $title)
     {
-
-        $validated = $request->validate([
-            'booking_date' => 'required',
-            'booking_time' => 'required'
-        ]);
-        $user_id = $request->user->id;
-        $get_user1 = User::find($user_id);
-        $get_user = DB::table('vehicles')->where('user_id', $request->user->id)->where('is_vehicle_default', 1)->first();
-        if (!$get_user) {
-            return response()->json(['status' => 'error', 'message' => 'Please Add Vehicle'], 400);
-        }
-        $get_active_bank = DB::table('banks')->where('is_bank_active', 1)->first();
-        if (!$get_active_bank) {
-            return response()->json(['status' => 'error', 'message' => 'Add Active Bank'], 400);
-        }
-        $check_service = Pincode::where('pin_code', $get_user1->pincode)->where('status', 1)->first();
-        if (!$check_service) {
-            return response()->json(['status' => 'error', 'message' => 'Service not available in your location'], 400);
+        $page = Page::where('page_name', $title)->first();
+        if ($page) {
+            return response()->json(['status' => 'OK', 'data' => $page], 200);
         } else {
-            $booking = new Booking();
-            $booking->user_id = $user_id;
-            $booking->booking_date = $request->booking_date;
-            $booking->booking_time = $request->booking_time;
-            $booking->description = $request->description;
-            $booking->vehicle_type =   $get_user->vehicle_type;
-            $booking->vehicle_number =   $get_user->vehicle_number;
-            $booking->soc =   $request->soc;
-            $booking->pincode =   $get_user1->pincode;
-            $booking->country =   $get_user1->country;
-            $booking->state =   $get_user1->state;
-            $booking->city =   $get_user1->city;
-            $booking->address =   $get_user1->address;
-            $booking->name =   $get_user1->name;
-            $booking->email =   $get_user1->email;
-            $booking->mobile_no =   $get_user1->mobile_no;
-            if ($request->booking_type) {
-                $booking->booking_type = $request->booking_type;
-            }
-            $booking->save();
-            DB::table('tbl_transaction')->insert([
-                'user_id' => $request->user->id,
-                'booking_id'  => $booking->id,
-                'active_bank_id' => $get_active_bank->id
-            ]);
-            return response()->json(['status' => 'OK', 'message' => 'Booking request sent successfully'], 200);
+            return response()->json(['status' => 'Error', 'data' => 'Page not found.'], 404);
         }
     }
-
-    public function booking_list(Request $request)
-    {
-        $user_id = $request->user->id;
-        $get_book_session = DB::table('bookings as a')
-            ->leftJoin('users as b', 'a.user_id', '=', 'b.id')
-            ->select(
-                'a.*',
-                'b.name as user_name',
-                'b.email as user_email',
-                'b.mobile_no as user_mobile'
-            )
-            ->where('a.status', 1)
-            ->where('b.status', 1)
-            ->where('a.user_id', $user_id)->orderBy('a.id', 'desc')
-            ->get();
-        if ($get_book_session) {
-            return response()->json([
-                'status' => 'OK',
-                'message' => 'Book Session Fetched Successfully',
-                'data' => $get_book_session
-            ], 200);
-        } else {
-            return response()->json([
-                'status' => 'error',
-                'meesage' => 'data not found'
-            ]);
-        }
-    }
-
-    public function get_booking(Request $request, $id)
+    
+      public function createOrder(Request $request)
     {
 
-        $get_booking = DB::table('bookings')->where('id', $id)->first();
-        if ($get_booking) {
-            return response()->json([
-                'status' => 'OK',
-                'message' => 'Get Book Session Fetched Successfully',
-                'data' => $get_booking
-            ], 200);
-        } else {
-            return response()->json([
-                'status' => 'error',
-                'meesage' => 'data not found'
-            ]);
-        }
-    }
 
-    public function booking_update(Request $request)
-    {
+     
 
-        //  $validated = $request->validate([
-        //         'booking_date' => 'required',
-        //         'booking_time' => 'required'
-        //     ]);
-        $user_id = $request->user->id;
-        $booking = Booking::find($request->hidden_id);
-        if ($request->booking_date && $request->booking_time) {
-            $booking->booking_date = $request->booking_date;
-            $booking->booking_time = $request->booking_time;
-        }
-        if ($request->booking_status) {
-            $booking->booking_status = $request->booking_status;
-        }
-        if ($request->description) {
-            $booking->description = $request->description;
-        }
-        $booking->save();
-        return response()->json(['status' => 'OK', 'message' => 'Booking Schedule update successfully'], 200);
-    }
+        $api = new Api(env('RAZORPAY_KEY'), env('RAZORPAY_SECRET'));
 
+        $amount = $request->amount; // Amount in INR
+        $receiptId = 'BOOKING_' . Str::random(8); // Custom receipt ID
 
+        try {
+            $orderData = [
+                'receipt'         => $receiptId,
+                'amount'          => $amount * 100, // Amount in paisa
+                'currency'        => 'INR',
+                'payment_capture' => 1 // Auto capture after payment
+            ];
 
-    public function uploadProfilePicture(Request $request)
-    {
-        $user_id = $request->user->id;
-        // Validate the uploaded file
-        $request->validate([
-            'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // 2MB Max
-        ]);
+            $order = $api->order->create($orderData); // Creates Razorpay Order
 
-        // Store the file
-        if ($request->hasFile('profile_picture')) {
-            $file = $request->file('profile_picture');
-            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('profile-pictures', $filename, 'public');
-            DB::table('users')->where('id', $user_id)->update(['image' => $path]);
-            // Respond with the file path
             return response()->json([
                 'success' => true,
-                'message' => 'Profile picture uploaded successfully!',
-                'file_path' => Storage::url($path)
+                'order_id' => $order['id'],
+                'amount' => $order['amount'],
+                'currency' => $order['currency'],
+                'receipt' => $order['receipt']
             ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
         }
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to upload profile picture.'
-        ], 500);
     }
 
-    public function get_user(Request $request)
+
+    public function payment(Request $request)
     {
 
-        $user_id = $request->user->id;
-        $get_user = User::where('status', 1)->where('id', $user_id)->get();
-        $user_data = [];
-        foreach($get_user as $user){
-            $user->vehicle_images = DB::table('tbl_vehicle_image')->where('status',1)->where('user_id',$user_id)->get();
-            $user_data[] = $user;
+        $api = new Api(env('RAZORPAY_KEY'), env('RAZORPAY_SECRET'));
+        try {
+            // Fetch the payment details
+            $payment = $api->payment->fetch($request->razorpay_payment_id);
+
+            // Check if the payment is authorized
+            if ($payment->status === 'authorized' || $payment->status === 'captured') {
+                // Capture the payment
+                if ($payment->status === 'authorized') {
+                    $payment->capture(['amount' => $payment->amount]); // Amount is in paisa
+                }
+                // Store the payment details
+                $insert =  DB::table('payment_transactions')->insertGetId([
+                    'user_id'     => $request->user->id,
+                    'booking_id'  => $request->booking_id ?? null,
+                    'payment_id'  => $payment->id,
+                    'order_id'    => $payment->order_id ?? null,
+                    'method'      => $payment->method,
+                    'amount'      => $payment->amount / 100, // convert from paisa to INR
+                    'currency'    => $payment->currency,
+                    'status'      => $payment->status,
+                    'response'    => json_encode($payment),
+                    'created_at'  => now(), // manually add if timestamps aren't auto-handled
+                    'updated_at'  => now()
+                ]);
+
+                return response()->json(['success' => true, 'message' => 'Payment captured and saved.', 'data' => $insert]);
+            } else {
+                return response()->json(['success' => false, 'message' => 'Payment not authorized.']);
+            }
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
         }
-        return response()->json(['status' => 'OK', 'message' => 'User details', 'data' => $user], 200);
+    }
+    
+    public function handle(Request $request)
+{
+    // Remove this in production
+    echo 234234; die;
+
+    $data = $request->getContent();
+    $signature = $request->header('X-Razorpay-Signature');
+    $webhookSecret = env('RAZORPAY_WEBHOOK_SECRET');
+
+    // Verify signature
+    $expectedSignature = hash_hmac('sha256', $data, $webhookSecret);
+
+    if (!hash_equals($expectedSignature, $signature)) {
+        Log::warning('Razorpay webhook signature mismatch');
+        return response('Signature mismatch', 400);
     }
 
-    public function about_us(Request $request){
-        $about_us = DB::table('pages')->where('id',1)->first();
-        return response()->json(['status' => 'OK', 'data' => $about_us], 200);
+    $payload = json_decode($data, true);
+    $event = $payload['event'];
+
+    Log::info('Razorpay Webhook Event: ' . $event, $payload);
+
+    if ($event === 'payment.captured') {
+        $payment = $payload['payload']['payment']['entity'];
+        $paymentId = $payment['id'];
+        $amount = $payment['amount'] / 100; // convert to INR
+        $status = $payment['status'];
+
+        // ✅ Update your database
+        DB::table('payment_transactions')
+            ->where('payment_id', $paymentId)
+            ->update([
+                'status'     => $status,
+                'amount'     => $amount,
+                'response'   => json_encode($payment),
+                'updated_at' => now()
+            ]);
+
+    } elseif ($event === 'payment.failed') {
+        $payment = $payload['payload']['payment']['entity'];
+        $paymentId = $payment['id'];
+        $status = $payment['status'];
+
+        // Update DB with failure status
+        DB::table('payment_transactions')
+            ->where('payment_id', $paymentId)
+            ->update([
+                'status'     => $status,
+                'response'   => json_encode($payment),
+                'updated_at' => now()
+            ]);
     }
 
-    public function get_transaction(Request $request)
-    {
+    return response()->json(['status' => 'ok']);
 
-        $get_transaction = DB::table('tbl_transaction')->where('user_id', $request->user->id)->orderBy('id', 'desc')->get();
-        $new_arr = array();
-        foreach ($get_transaction as $row) {
-            $get_user_info = User::where('status', 1)->where('id', $row->user_id)->first();
-            $get_booking_info = Booking::where('status', 1)->where('id', $row->booking_id)->first();
-            $get_bank_info = DB::table('banks')->where('status', 1)->where('id', $row->active_bank_id)->first();
-            $row->get_user_info = $get_user_info;
-            $row->get_booking_info =  $get_booking_info;
-            $row->get_bank_info =  $get_bank_info;
-            $new_arr[] = $row;
-        }
-
-        return response()->json([
-            'status' => 'OK',
-            'message' => 'Get Transaction Info',
-            'data' => $new_arr
-        ], 200);
-    }
-
-    public function genrate_invoice(Request $request, $id)
-    {
-        $query = DB::table('tbl_transaction');
-        if (isset($request->type)) {
-            $query->where('user_id', $request->type);
-        }
-        if ($id) {
-            $query->where('id', $id);
-        }
-        $get_transaction = $query->orderBy('id', 'desc')->get();
-        $alltransaction = array();
-        foreach ($get_transaction as $row) {
-            $get_user_info = User::where('status', 1)->where('id', $row->user_id)->first();
-            $get_booking_info = Booking::where('status', 1)->where('id', $row->booking_id)->first();
-            $get_bank_info = DB::table('banks')->where('status', 1)->where('id', $row->active_bank_id)->first();
-            $row->get_user_info = $get_user_info;
-            $row->get_booking_info =  $get_booking_info;
-            $row->get_bank_info =  $get_bank_info;
-            $alltransaction[] = $row;
-        }
-        $company_info = DB::table('cms_settings')->where('status', 1)->where('id', 1)->first();
-        $data = array('company_info' => $company_info, 'invoice' => $alltransaction);
-        $pdf = PDF::loadView('company.invoice', $data);
-        // return $pdf->download('invoice.pdf');
-        return $pdf->stream('invoice.pdf');
-    }
+}
 }

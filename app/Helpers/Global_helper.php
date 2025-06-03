@@ -265,120 +265,23 @@ class Global_helper
       return  DB::table('dynamic_url')->where('status',1)->get();
     }
 
+    public static function SaveNotification($package_id,$user_id,$type,$subject='',$description='',){
+        $insert_notification = DB::table('tbl_notification')->insert([
+            'booking_id' => $package_id,
+            'user_id' => $user_id,
+            'type' => $type,
+            'subject' => $subject,
+            'description' => $description
+        ]);
+        if($insert_notification){
+            return true;
+        }
+    }
+
     public static function companyDetails()
     {
         return Company::where('status',1)->first();
     }
-
-
-    public static function getRolePermissions($role_id,$permission_name){
-
-        $get_permission = DB::table('role_permission as a')->join('permissions as b','a.permission_id', '=' , 'b.id')->join('permission_category as c','b.per_cate_id','=','c.id')->
-        select('a.*','b.title','c.category_name')->where('a.status',1)->where('b.status',1)->where('c.status',1)->where('a.role_id',$role_id)->where('b.title',$permission_name)->first();
-
-        if(isset($get_permission->permission_status) && $get_permission->permission_status == 1){
-            return 1;
-        }else{
-            return 2;
-        }
-    }
-
- public static function getSidebarRolePermissions($role_id, $category_name)
-{
-    // Fetch the category based on the category name
-    $get_category = DB::table('permission_category')
-        ->where('status', 1)
-        ->where('category_name', $category_name)
-        ->first();
-
-    // If the category is not found, return 2 (no permissions)
-    if (!$get_category) {
-        return 2;
-    }
-
-    // Fetch permissions for the given role and category
-    $get_permission = DB::table('permissions as a')
-        ->join('role_permission as b', 'b.permission_id', '=', 'a.id')
-        ->select('a.*', 'b.permission_status as permission_status')
-        ->where('a.status', 1)
-        ->where('b.status', 1)
-        ->where('b.role_id', $role_id)
-        ->where('a.per_cate_id', $get_category->id)
-        ->where(function ($query) {
-            $query->orWhere('b.permission_status', 1);
-        })
-        ->get();
-
-    // Check if there is any permission with `permission_status`
-    $has_permission = $get_permission->contains('permission_status', 1);
-
-    return $has_permission ? 1 : 2;
-}
-
-    public static function Propertylist($type)
-    {
-        $query = DB::table('properties');
-        if ($type==1 || $type == 2) {
-            $query->where('is_property_verified', $type)->where('status', 1);
-        }else{
-              $query->where('status', 2 );
-        }
-
-        return $query->count();
-    }
-
-    public static function Sellers($type)
-    {
-        $query = DB::table('users');
-        if ($type==1 || $type == 2) {
-            $query->where('status', 1);
-        }else{
-              $query->where('status', 2 );
-        }
-
-        return $query->count();
-    }
-
-
-
-    public static function Enquiry($type)
-    {
-        $query = DB::table('enquiries')->where('status', 1);
-
-        if ($type == 1) {
-            $query->whereNull('property_id');
-        } elseif ($type == 2) {
-            $query->whereNotNull('property_id');
-        } else {
-            return 0;
-        }
-
-        return $query->count();
-    }
-
-    public static function getTablesCount()
-    {
-        $tables = [
-            // 'Roles' => 'roles',
-            'Users' => 'users',
-            'State' => 'tbl_state',
-            'City' => 'tbl_city',
-            'Vehicle' => 'tbl_vehicle',
-            'Total Booking' => 'tbl_booking',
-            // 'Review' => 'property_reviews',
-        ];
-        $result = [];
-        foreach ($tables as $name => $table) {
-            $count = DB::table($table)->where('status', 1)->count();
-            $result[] = [
-                'name' => $name,
-                'count' => $count,
-            ];
-        }
-
-        return $result;
-    }
-
 
 
 

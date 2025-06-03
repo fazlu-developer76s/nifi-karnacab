@@ -8,9 +8,6 @@
     <meta charset="utf-8" />
     <title>{{ (!empty($title)) ? $title : config('app.name', 'Laravel') ; }} </title>
     <style>
-        .app-header{
-            position: fixed !important;
-        }
         .bootstrap-tagsinput {
             margin: 0;
             width: 100%;
@@ -34,7 +31,7 @@
             margin-bottom: 0.5em;
         }
         .app-sidebar{
-            background: #ad1c17 !important;
+            background: #24244c !important;
             color: black !important;
         }
     </style>

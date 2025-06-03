@@ -1,4 +1,5 @@
 @extends('layouts/app')
+
 @section('content')
     <style>
         strong {
@@ -64,353 +65,274 @@
             }
         }
     </style>
-    @php
-        $data = json_decode(json_encode($bookings)); // Replace $array_data with the actual array
-    @endphp
 
+    @if (isset($get_lead))
+        @php $form_action = "lead.update"; @endphp
+    @else
+        @php $form_action = "lead.create"; @endphp
+    @endif
+    <input type="hidden" id="user_id" value="{{ Auth::user()->id }}">
+    <input type="hidden" id="lead_id" value="{{ isset($get_lead) ? $get_lead->id : ' ' }}">
     <div class="container-fluid">
         <div id="content" class="app-content">
             <div class="d-flex align-items-center mb-3">
                 <div>
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="dashboard.php">Home</a></li>
-                        <li class="breadcrumb-item"><a href="javascript:;">Booking Information</a></li>
-                        <li class="breadcrumb-item active"><i class="fa fa-arrow-back"></i> Booking Details</li>
+                        <li class="breadcrumb-item"><a href="javascript:;">Lead</a></li>
+                        <li class="breadcrumb-item active"><i class="fa fa-arrow-back"></i> Create Lead</li>
                     </ol>
-                    <h1 class="page-header mb-0">Booking Information</h1>
+                    <h1 class="page-header mb-0">Lead</h1>
                 </div>
             </div>
+
+            <!-- Row for equal division -->
             <div class="row">
+                <!-- Form Section -->
                 <div class="col-md-12">
                     <div class="card">
                         <div class="card-header bg-primary text-white">
-                            <h4 class="mb-0">Booking Information</h4>
+                            <h4 class="mb-0">Lead Information</h4>
                         </div>
+
+                        @switch($get_lead->loan_status)
+                            @case(1)
+                                @php $loan_status = "Pending"; @endphp
+                            @break
+
+                            @case(2)
+                                @php $loan_status = "View"; @endphp
+                            @break
+
+                            @case(3)
+                                @php $loan_status = "Under_Discussion"; @endphp
+                            @break
+
+                            @case(4)
+                                @php $loan_status = "Pending_Kyc"; @endphp
+                            @break
+
+                            @case(5)
+                                @php $loan_status = "Qualified"; @endphp
+                            @break
+
+                            @case(6)
+                                @php $loan_status = "Rejected"; @endphp
+                            @break
+
+                            @default
+                                @php $loan_status = "Unknown"; @endphp
+                        @endswitch
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6">
                                     <table class="table table-bordered">
                                         <tbody>
-                                            <h4>Customer Information</h4>
                                             <tr>
-                                                <td><strong>Full Name:</strong></td>
-                                                <td>{{ $data[0]->name ?? 'N/A' }}</td>
+                                                <td><strong>Lead Date:</strong></td>
+                                                <td>{{ \Carbon\Carbon::parse($get_lead->lead_create_date)->format('d F Y h:i A') }}
+                                                </td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Email:</strong></td>
-                                                <td>{{ $data[0]->email_id ?? 'N/A' }}</td>
+                                                <td><strong>Work:</strong></td>
+                                                <td>{{ $get_lead->work ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Mobile No:</strong></td>
-                                                <td>{{ $data[0]->mobile_no ?? 'N/A' }}</td>
+                                                <td><strong>Work Address:</strong></td>
+                                                <td>{{ $get_lead->work_address ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Number Of People:</strong></td>
-                                                <td>{{ $data[0]->num_of_people ?? 'N/A' }}</td>
+                                                <td><strong>Shop/Thiya:</strong></td>
+                                                <td>{{ $get_lead->shop_thiya ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Number Of Ladies:</strong></td>
-                                                <td>{{ $data[0]->num_of_lady ?? 'N/A' }}</td>
+                                                <td><strong>Home Address:</strong></td>
+                                                <td>{{ $get_lead->home_address ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Number Of Men:</strong></td>
-                                                <td>{{ $data[0]->num_of_men ?? 'N/A' }}</td>
+                                                <td><strong>Loan Amount:</strong></td>
+                                                <td>{{ $get_lead->loan_amount ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Number Of Children:</strong></td>
-                                                <td>{{ $data[0]->num_of_child ?? 'N/A' }}</td>
+                                                <td><strong>Balance :</strong></td>
+                                                <td>{{ $get_lead->balance ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Pick Up Date:</strong></td>
-                                                <td>{{ $data[0]->pick_up_date ?? 'N/A' }}</td>
+                                                <td><strong>Old Loan :</strong></td>
+                                                <td>{{ $get_lead->old_loan ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Pick Up Time:</strong></td>
-                                                <td>{{ $data[0]->pick_up_time ?? 'N/A' }}</td>
+                                                <td><strong>File No. :</strong></td>
+                                                <td>{{ $get_lead->old_loan ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Pick Up Location:</strong></td>
-                                                <td>{{ $data[0]->pick_up_location ?? 'N/A' }}</td>
+                                                <td><strong>R. N. No. :</strong></td>
+                                                <td>{{ $get_lead->old_loan ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Country:</strong></td>
-                                                <td>{{ $data[0]->country ?? 'N/A' }}</td>
+                                                <td><strong>Accountant Sign :</strong></td>
+                                                <td>{{ $get_lead->old_loan ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>State:</strong></td>
-                                                <td>{{ $data[0]->state ?? 'N/A' }}</td>
+                                                <td><strong>Guarantor Name:</strong></td>
+                                                <td>{{ $get_lead->old_loan ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>City:</strong></td>
-                                                <td>{{ $data[0]->city ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Address:</strong></td>
-                                                <td>{{ $data[0]->address ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Pincode:</strong></td>
-                                                <td>{{ $data[0]->pincode ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Drop Location:</strong></td>
-                                                <td>{{ $data[0]->drop_us_location ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Booking Amount:</strong></td>
-                                                <td>{{ $data[0]->booking_amount ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Note:</strong></td>
-                                                <td>{{ $data[0]->note ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Seater:</strong></td>
-                                                <td>{{ $data[0]->seater ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Booking Percentage:</strong></td>
-                                                <td>{{ $data[0]->booking_percentage ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Booking Tax:</strong></td>
-                                                <td>{{ $data[0]->booking_tax ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Booking Post Percentage:</strong></td>
-                                                <td>{{ $data[0]->booking_post_percentage ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Booking Post TDS:</strong></td>
-                                                <td>{{ $data[0]->booking_post_tds ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Created At:</strong></td>
-                                                <td>{{ \Carbon\Carbon::parse($data[0]->created_at)->format('Y-m-d H:i:s') ?? 'N/A' }}</td>
+                                                <td><strong>Remark:</strong></td>
+                                                <td>{{ $get_lead->reason_of_loan ?? 'N/A' }}</td>
                                             </tr>
 
+
+
+
+
+
+
+                                            <tr>
+                                                <td><strong>Created By:</strong></td>
+                                                <td>{{ isset($get_user->name) ? ucwords($get_user->name) : 'N/A' }}</td>
+                                            </tr>
                                         </tbody>
-
                                     </table>
                                 </div>
                                 <div class="col-md-6">
                                     <table class="table table-bordered">
                                         <tbody>
                                             <tr>
-                                                <h4>Vehicle Information</h4>
-                                                <td><strong>Vehicle Type:</strong></td>
-                                                <td>{{ $data[0]->accept_user_vehicle_type ?? 'N/A' }}</td>
+                                                <td><strong>Name:</strong></td>
+                                                <td>{{ ucwords($get_lead->name ?? 'N/A') }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Registration Number:</strong></td>
-                                                <td>{{ $data[0]->accept_user_registration_number ?? 'N/A' }}</td>
+                                                <td><strong>Phone:</strong></td>
+                                                <td>{{ $get_lead->mobile ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Pick-Up Location:</strong></td>
-                                                <td>{{ $data[0]->pick_up_location ?? 'N/A' }}</td>
+                                                <td><strong>Cheque:</strong></td>
+                                                <td>{{ $get_lead->cheque ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Drop-Off Location:</strong></td>
-                                                <td>{{ $data[0]->drop_us_location ?? 'N/A' }}</td>
+                                                <td><strong>Home Type:</strong></td>
+                                                <td>{{ $get_lead->home_type ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Status:</strong></td>
-                                                <td>
-                                                    @switch($data[0]->booking_status)
-                                                        @case(1)
-                                                            Open
-                                                        @break
-
-                                                        @case(2)
-                                                            Accept
-                                                        @break
-
-                                                        @case(3)
-                                                            Complete
-                                                        @break
-
-                                                        @case(4)
-                                                            Cancel
-                                                        @break
-
-                                                        @default
-                                                            N/A
-                                                    @endswitch
+                                                <td><strong>File Hain:</strong></td>
+                                                <td>{{ $get_lead->file_hai ?? 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Tut:</strong></td>
+                                                <td>{{ $get_lead->tut ?? 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>+/-Day:</strong></td>
+                                                <td>{{ $get_lead->plus_day ?? 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Loan Type:</strong></td>
+                                                <td>{{ $get_lead->loan_type ?? 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Sr No:</strong></td>
+                                                <td>{{ $get_lead->ser_no ?? 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Amount :</strong></td>
+                                                <td>{{ $get_lead->ser_no ?? 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Guarantor:</strong></td>
+                                                <td>{{ $get_lead->guarantor ?? 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Service :</strong></td>
+                                                <td>{{ $get_lead->service_name ?? 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Lead Status:</strong></td>
+                                                <td id="fetch_loan_status">
+                                                    {{ isset($loan_status) ? str_replace('_', ' ', $loan_status) : 'N/A' }}
                                                 </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                    <table class="table table-bordered">
-                                        <tbody>
-                                            <tr>
-                                                <h4>Post Booking User Info</h4>
-                                                <td><strong>Username:</strong></td>
-                                                <td>{{ $data[0]->post_user->name ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Email:</strong></td>
-                                                <td>{{ $data[0]->post_user->email ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Mobile No:</strong></td>
-                                                <td>{{ $data[0]->post_user->mobile_no ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>View All Info:</strong></td>
-                                                <td><a href="{{ route('member.view', ['id' => $data[0]->post_user->id ?? 'N/A']) }}" target="_blank">Click here</a></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                    <table class="table table-bordered">
-                                        <tbody>
-                                            <tr>
-                                                <h4>Accept Booking User Info</h4>
-                                                <td><strong>Username:</strong></td>
-                                                <td>{{ $data[0]->accept_user->name ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Email:</strong></td>
-                                                <td>{{ $data[0]->accept_user->email ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Mobile No:</strong></td>
-                                                <td>{{ $data[0]->accept_user->mobile_no ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>View All Info:</strong></td>
-                                                <td><a href="{{ route('member.view', ['id' => $data[0]->accept_user->id ?? 'N/A']) }}" target="_blank">Click here</a></td>
                                             </tr>
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
-                            <h4>Booking Logs</h4>
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>User</th>
-                                        <th>Event</th>
-                                        <th>Created At</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($data[0]->booking_log as $log)
-                                        <tr>
-                                            <td>{{ $log->user_name ?? 'N/A' }}</td>
-
-                                            {{-- Booking Type Mapping --}}
-                                            <td>
-                                                @switch($log->booking_type)
-                                                    @case(1)
-                                                        Post Booking
-                                                        @break
-                                                    @case(2)
-                                                        Accept Booking
-                                                        @break
-                                                    @case(3)
-                                                        Complete Booking
-                                                        @break
-                                                    @case(4)
-                                                        Cancel Booking
-                                                        @break
-                                                    @default
-                                                        N/A
-                                                @endswitch
-                                            </td>
-
-                                            {{-- Created At --}}
-                                            <td>{{ \Carbon\Carbon::parse($log->created_at)->format('Y-m-d H:i:s') ?? 'N/A' }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                            <h4>Transaction Logs</h4>
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>User</th>
-                                        <th>Transaction Type</th>
-                                        <th>Payment Type</th>
-                                        <th>Payment ID</th>
-                                        <th>Amount</th>
-                                        <th>Created At</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($data[0]->statement as $statement)
-                                        <tr>
-                                            <td>{{ $statement->user_name ?? 'N/A' }}</td>
-
-                                            {{-- Transaction Type Mapping --}}
-                                            <td>
-                                                @switch($statement->transaction_type)
-                                                    @case(1)
-                                                        Accept Booking Charges
-                                                        @break
-                                                    @case(2)
-                                                        Complete Booking Charges
-                                                        @break
-                                                    @case(3)
-                                                        Top Up Wallet
-                                                        @break
-                                                    @case(4)
-                                                        Share Charges Post Booking
-                                                        @break
-                                                    @case(5)
-                                                        Cancel Booking Charges
-                                                        @break
-                                                    @default
-                                                        N/A
-                                                @endswitch
-                                            </td>
-
-                                            {{-- Payment Type Mapping --}}
-                                            <td>
-                                                @switch($statement->payment_type)
-                                                    @case(1)
-                                                        Credit
-                                                        @break
-                                                    @case(2)
-                                                        Debit
-                                                        @break
-                                                    @default
-                                                        N/A
-                                                @endswitch
-                                            </td>
-
-                                            {{-- Payment ID --}}
-                                            <td>{{ $statement->payment_id ?? 'N/A' }}</td>
-
-                                            {{-- Amount --}}
-                                            <td>{{ number_format($statement->amount, 2) ?? 'N/A' }}</td>
-                                            <td>{{ \Carbon\Carbon::parse($statement->created_at)->format('Y-m-d H:i:s') ?? 'N/A' }}</td>
-
-                                            {{-- Payment Status Mapping --}}
-                                            <td>
-                                                @switch($statement->payment_status)
-                                                    @case(1)
-                                                        Success
-                                                        @break
-                                                    @case(2)
-                                                        Failed
-                                                        @break
-                                                    @case(3)
-                                                        Process
-                                                        @break
-                                                    @default
-                                                        N/A
-                                                @endswitch
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-
                         </div>
+
+
+                    </div>
+                </div>
+                @if ($get_lead->loan_status >= 3)
+                    <div class="col-md-8">
+                    @else
+                        <div class="col-md-12">
+                @endif
+
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h4 class="mb-0">Activity Log</h4>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group" id="note_html">
+                            <!-- Notes will be appended here dynamically -->
+                        </ul>
+                        @if ($get_lead->loan_status < 3)
+                            <button class="btn btn-outline-primary mt-5"
+                                onclick="startDisscussion({{ isset($get_lead->id) ? $get_lead->id : ' ' }}, {{ Auth::user()->id }}, '');">Start
+                                Discussion</button>
+                        @endif
                     </div>
                 </div>
             </div>
+
+            @if ($get_lead->loan_status >= 3)
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h4 class="mb-0">Notes</h4>
+                        </div>
+                        <div class="card-body">
+                            <form action="#" method="POST">
+                                @csrf
+                                <!-- Textarea Field -->
+                                <div class="mb-3">
+                                    <label for="notes" class="form-label">Notes</label>
+                                    <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Enter your notes here"></textarea>
+
+                                    <input type="hidden" id="hidden_id">
+                                </div>
+                                <!-- Select Field -->
+                                <div class="mb-3">
+                                    <label for="option" class="form-label">Select Status</label>
+                                    <select class="form-select get_status" id="status" name="option" onchange="CheckStatus()">
+                                        <option selected>Select an option</option>
+                                        <option value="3" {{ $get_lead->loan_status == 3 ? 'selected' : '' }}>Under
+                                            Discussion</option>
+                                        {{-- <option value="4" {{ $get_lead->loan_status == 4 ? 'selected' : '' }}>Pending For KYC</option> --}}
+                                        <option value="5" {{ $get_lead->loan_status == 5 ? 'selected' : '' }}>
+                                            Qualified</option>
+                                        <option value="6" {{ $get_lead->loan_status == 6 ? 'selected' : '' }}>Rejected
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="mb-3 d-none select_route_id">
+                                    <label for="option" class="form-label">Select Route</label>
+                                    <select class="form-control custom-select-icon @error('route_id') is-invalid @enderror" name="route_id" id="select_route_id">
+                                        <option value="">Select Route </option>
+                                    @if($get_route)
+                                        @foreach ($get_route as $route)
+                                            <option value="{{ $route->id }}" >{{ ucwords($route->route) . ' ('. $route->title . ")"  }}</option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                                </div>
+                                <!-- Submit Button -->
+                                <span type="submit" class="btn btn-primary" onclick="return SaveNotes();">Submit</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
+    </div>
     </div>
 @endsection

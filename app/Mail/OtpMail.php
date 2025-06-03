@@ -13,6 +13,9 @@ class OtpMail extends Mailable
     use Queueable, SerializesModels;
 
     public $otp;
+    public $fromEmail;
+    public $fromName;
+    public $replyEmail;
 
     /**
      * Create a new message instance.
@@ -20,9 +23,12 @@ class OtpMail extends Mailable
      * @param string $otp
      * @return void
      */
-    public function __construct($otp)
+    public function __construct($otp,$fromEmail,$fromName,$replyEmail)
     {
         $this->otp = $otp;
+        $this->fromEmail = $fromEmail;
+        $this->fromName = $fromName;
+        $this->replyEmail = $replyEmail;
     }
 
     /**
@@ -33,12 +39,9 @@ class OtpMail extends Mailable
     public function build()
     {
         return $this->view('emails.otp') // specify the view for the email
-            ->subject('Your OTP Code') // set the email subject
-            ->with('otp', $this->otp) // pass OTP to the view
-            ->from('website.fazlu@gmail.com', 'Website fazlu') // From address
-            ->replyTo('website.fazlu@gmail.com', 'Website fazlu'); // From address
-            // ->replyTo('reply-to@example.com', 'Reply Name') // Reply-To address
-            // ->cc('cc@example.com', 'CC Name') // CC address
-            // ->bcc('bcc@example.com', 'BCC Name'); // BCC address
+        ->subject('Your OTP Code') // set the email subject
+        ->with('otp', $this->otp) // pass OTP to the view
+        ->from($this->fromEmail, $this->fromName) // From address
+        ->replyTo($this->replyEmail, $this->fromName); // Reply-To address
     }
 }

@@ -23,6 +23,7 @@ class BankController extends Controller
                 'account_name' => 'required',
                 'bank_name' => 'required',
                 'ifsc_code' => 'required',
+                'upi_id' => 'required'
             ]);
             $check_data = $this->check_exist_data($request, null);
             if ($check_data) {
@@ -36,14 +37,15 @@ class BankController extends Controller
                         ->with('error', trim($message) . ' Already Exists');
                 }
             }
+         
             $bank = new bank();
             $bank->account_no = $request->account_no;
             $bank->account_name = $request->account_name;
             $bank->bank_name = $request->bank_name;
             $bank->ifsc_code = $request->ifsc_code;
-            $bank->type = $request->type;
-            $bank->used_for = $request->used_for;
-            $bank->status = $request->status;
+            $bank->upi_id = $request->upi_id;
+
+            
             $bank->save();
             return redirect()->route('bank')->with('success', 'Bank Details Added Successfully');
         }
@@ -69,6 +71,7 @@ class BankController extends Controller
            'account_name' => 'required',
            'bank_name' => 'required',
            'ifsc_code' => 'required',
+           'upi_id' => 'required'
         ]);
         $check_data = $this->check_exist_data($request, $request->hidden_id);
         if ($check_data) {
@@ -82,15 +85,18 @@ class BankController extends Controller
                     ->with('error', trim($message) . ' Already Exists');
             }
         }
-
+        
         $bank = Bank::findOrFail($request->hidden_id);
+        if($request->is_bank_active == 1){
+            Bank::where('id','!=',$request->hidden_id)->update(['is_bank_active'=>2]);
+            $bank->is_bank_active = $request->is_bank_active;
+        }
         $bank->account_no = $request->account_no;
         $bank->account_name = $request->account_name;
         $bank->bank_name = $request->bank_name;
         $bank->ifsc_code = $request->ifsc_code;
-        $bank->type = $request->type;
-        $bank->used_for = $request->used_for;
-        $bank->status = $request->status;
+        $bank->upi_id = $request->upi_id;
+        
         $bank->save();
         return redirect()->route('bank')->with('success', 'Bank Details Updated Successfully');
     }

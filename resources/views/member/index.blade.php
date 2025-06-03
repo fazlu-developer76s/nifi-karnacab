@@ -39,11 +39,12 @@
                                         <th class="text-nowrap">Name </th>
                                         <th class="text-nowrap">Email</th>
                                         <th class="text-nowrap">Mobile No.</th>
-                                        {{-- <th class="text-nowrap">Aadhar No.</th> --}}
                                         <th class="text-nowrap">Role</th>
-                                        {{-- <th class="text-nowrap">Type</th> --}}
                                         <th class="text-nowrap">Created Date</th>
                                         <th class="text-nowrap">Status</th>
+                                        @if(isset($is_user))
+                                        <th class="text-nowrap">Verify User</th>
+                                        @endif
                                         <th class="text-nowrap">Action</th>
                                     </tr>
                                 </thead>
@@ -55,26 +56,29 @@
                                         <td>{{ $member->name }}</td>
                                         <td>{{ $member->email }}</td>
                                         <td>{{ $member->mobile_no }}</td>
-                                        {{-- <td>{{ $member->aadhar_no }}</td> --}}
                                         <td>{{ $member->title }}</td>
-                                        {{-- <td>{{ $member->employe_type }}</td> --}}
                                         <td>{{ \Carbon\Carbon::parse($member->created_at)->format('d F Y h:i A') }}</td>
                                         <td>
                                             <div class="form-check form-switch">
                                                 <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault{{ $member->id }}" {{ ($member->status==1) ? 'checked' : '' }}  onchange="ChangeStatus('users',{{ $member->id }});" >
                                               </div>
                                         </td>
+                                        @if(isset($is_user))
+                                        <td>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="is_user_verified{{ $member->id }}" {{ ($member->is_user_verified==1) ? 'checked' : '' }}  onchange="is_user_verified('users',{{ $member->id }});" >
+                                              </div>
+                                        </td>
+                                        @endif
                                         <td>
                                             @if($firstSegment = Request::segment(1) ===  "borrower" || $firstSegment = Request::segment(1) ===  "userlocation")
                                             <a href="{{ route('member.view', $member->id) }}" class="text-primary me-2">
                                                 <i class="fa fa-eye"></i>
                                             </a>
                                             @endif
-                                            @if($firstSegment = Request::segment(1) ===  "userlocation")
-                                            <a href="{{ route('member.view', $member->id) }}" class="text-primary me-2">
-                                                <i class="fa fa-map-marker"></i>
+                                            <a href="{{ route('member.view', $member->id) }}" class="text-warning me-2" target="_blank">
+                                                <i class="fa fa-eye"></i>
                                             </a>
-                                            @endif
                                             @if($firstSegment = Request::segment(1) !=  "borrower" && $firstSegment = Request::segment(1) !=  "userlocation")
                                             <a href="{{ route('member.edit', $member->id) }}" class="text-primary me-2">
                                                 <i class="fa fa-edit"></i>

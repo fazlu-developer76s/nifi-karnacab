@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
+use App\Models\Page;
 use App\Models\Permission;
 use DB;
 use App\Models\Roles;
@@ -19,6 +20,18 @@ class RoleController extends Controller
         $get_role = Roles::where('status', '!=', 3)->where('id', '!=', 1)->orderBy('id', 'desc')->get();
         return view('roles.index', compact('title', 'get_role'));
     }
+    
+    
+       public function get_pages(Request  $request , $title )
+    {
+        
+        $page = Page::where('page_name', $title)->first();
+        $title = $page->title;
+        return view('roles.policy', compact('title', 'page'));
+    }
+    
+  
+    
 
     public function store_roles(Request $request)
     {
@@ -88,43 +101,69 @@ class RoleController extends Controller
     }
 
     public function permission($id)
-    {
-        $title = 'Permission';
-        $getallpermission = array();
-        $permissions = Permission::where('status', 1)->get();
-        foreach ($permissions as $permission) {
-            $fetch_status = DB::table('role_permission')->where('permission_id', $permission->id)->where('role_id', $id)->first();
-            $permission['permission_status'] = $fetch_status;
-            $getallpermission[]  = $permission;
+{
+    $title = 'Permission';
+    $getallpermission = array();
+    $permission_category = DB::table('permission_category')->where('status', 1)->get();
+
+    foreach ($permission_category as $category) {
+        $category->permission = Permission::where('status', 1)
+            ->where('per_cate_id', $category->id)
+            ->get()
+            ->map(function ($permission) use ($id) {
+                $fetch_status = DB::table('role_permission')
+                    ->where('permission_id', $permission->id)
+                    ->where('role_id', $id)
+                    ->first();
+                $permission->permission_status = $fetch_status; // Set status here
+                return $permission;
+            });
+
+        $getallpermission[] = $category; // Build the result here
+    }
+    $getrole = Roles::find($id);
+    return view('roles.permission', compact('title', 'getallpermission', 'getrole'));
+}
+
+
+public function update_permission(Request $request)
+{
+    $roleId = $request->role_id;
+
+    // Ensure the role exists
+    $existingPermissions = DB::table('role_permission')
+        ->where('role_id', $roleId)
+        ->get();
+
+    if ($existingPermissions->isEmpty()) {
+        // Insert all permissions with default status
+        foreach ($request->hidden_id as $permissionId) {
+            DB::table('role_permission')->insert([
+                'role_id' => $roleId,
+                'permission_id' => $permissionId,
+                'permission_status' => 2, // Default status
+            ]);
         }
-        $getrole = Roles::find($id);
-        return view('roles.permission', compact('title', 'getallpermission', 'getrole'));
+    } else {
+        // Reset permission statuses for the role
+        DB::table('role_permission')
+            ->where('role_id', $roleId)
+            ->update(['permission_status' => 2]);
     }
 
-    public function update_permission(Request $request)
-    {
-
-        $check_update_permision = DB::table('role_permission')->where('role_id', $request->role_id)->first();
-        if ($check_update_permision == null) {
-            foreach ($request->hidden_id as $permission) {
-                DB::table('role_permission')->insert(['role_id' => $request->role_id, 'permission_id' => $permission]);
-            }
-            if (isset($request->permission)) {
-                foreach ($request->permission as $permission) {
-                    DB::table('role_permission')->where('role_id',$request->role_id)->where('permission_id',$permission)->update(['permission_status'=>1]);
-                }
-            }
-            return redirect()->route('roles', $request->role_id)->with('success', 'Update Permission successfully.');
-        } else {
-            DB::table('role_permission')->where('role_id', $request->role_id)->update(['permission_status' => 2]);
-            if (isset($request->permission)) {
-                foreach ($request->permission as $update_per_id) {
-                    DB::table('role_permission')->where('id', $update_per_id)->update(['permission_status' => 1]);
-                }
-            }
-            return redirect()->route('roles')->with('success', 'Update Permission successfully.');
+    // Update selected permissions
+    if ($request->has('permission')) {
+        foreach ($request->permission as $permissionId) {
+            DB::table('role_permission')
+                ->where('role_id', $roleId)
+                ->where('permission_id', $permissionId)
+                ->update(['permission_status' => 1]);
         }
     }
+
+    return redirect()->route('roles')->with('success', 'Permissions updated successfully.');
+}
+
 
     public function change_status(Request $request)
     {
@@ -136,6 +175,32 @@ class RoleController extends Controller
 
         if ($change_status) {
             return response()->json(['status' => 'status changed successfully']);
+        } else {
+            return response()->json(['status' => false]);
+        }
+    }
+    public function change_status_property(Request $request)
+    {
+        $table_name = $request->table_name;
+        $id = $request->id;
+        $status = $request->status;
+        $change_status = DB::table($table_name)->where('id', $id)->update(['is_property_verified' => $status, 'updated_at' => date('Y-m-d H:i:s')]);
+
+        if ($change_status) {
+            return response()->json(['status' => 'status changed successfully']);
+        } else {
+            return response()->json(['status' => false]);
+        }
+    }
+    
+    public function user_verified(Request $request){
+        
+        $table_name = $request->table_name;
+        $id = $request->id;
+        $status = $request->status;
+        $change_status = DB::table($table_name)->where('id', $id)->update(['is_user_verified' => $status, 'updated_at' => date('Y-m-d H:i:s')]);
+        if ($change_status) {
+            return response()->json(['status' => 'user verified successfully']);
         } else {
             return response()->json(['status' => false]);
         }

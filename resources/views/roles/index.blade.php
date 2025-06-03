@@ -17,7 +17,7 @@
                 <!-- Row for equal division -->
                 <div class="row">
                     <!-- Form Section -->
-                    <div class="col-md-6 d-none">
+                    <div class="col-md-6">
                         <div class="card border-0 mb-4">
                             <div class="card-header h6 mb-0 bg-none p-3">
                                 <i class="fa fa-user-shield fa-lg fa-fw text-dark text-opacity-50 me-1"></i>
@@ -46,8 +46,8 @@
                                                 <div class="mb-3">
                                                     <label class="form-label">Role Status</label>
                                                     <select class="form-control custom-select-icon" name="status">
-                                                        <option value="1" {{ ( isset($find_role) && $find_role->status == 1)?'selected':''; }}>Active Role</option>
-                                                        <option value="2" {{ ( isset($find_role) && $find_role->status == 2)?'selected':''; }}>Inactive Role</option>
+                                                        <option value="1" {{ ( isset($find_role) && $find_role->status == 1)?'selected':''; }}>Active</option>
+                                                        <option value="2" {{ ( isset($find_role) && $find_role->status == 2)?'selected':''; }}>Inactive</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -62,7 +62,7 @@
                     </div>
 
                     <!-- Table Section -->
-                    <div class="col-md-12">
+                    <div class="col-md-6">
                         <div class="card border-0 mb-4">
                             <div class="card-header h6 mb-0 bg-none p-3" style="border-bottom: 1px solid #2196f3;">
                                 <i class="fab fa-buromobelexperte fa-lg fa-fw text-dark text-opacity-50 me-1"></i> Role List

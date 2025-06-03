@@ -53,15 +53,7 @@
                                             @enderror
                                         </div>
                                     </div>
-                                    {{-- <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Employee Type</label>
-                                            <input class="form-control @error('employe_type') is-invalid @enderror" type="text" name="employe_type" placeholder="Enter employe_type" value="@if(empty($get_member)) {{ old('employe_type') }} @else {{ (isset($get_member)) ? $get_member->employe_type : '' ; }} @endif" />
-                                            @error('employe_type')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div> --}}
+
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Name</label>
@@ -91,26 +83,27 @@
                                     </div>
                                     {{-- <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label">Aadhar No.</label>
-                                            <input class="form-control @error('aadhar_no') is-invalid @enderror" type="text" name="aadhar_no" placeholder="Enter Aadhar No." value="@if(empty($get_member)) {{ old('aadhar_no') }} @else {{ (isset($get_member)) ? $get_member->aadhar_no : '' ; }} @endif" />
-                                            @error('aadhar_no')
+                                            <label class="form-label">Gst No..</label>
+                                            <input class="form-control @error('gst_no') is-invalid @enderror" type="text" name="gst_no" placeholder="Enter Mobile No." value="@if(empty($get_member)) {{ old('gst_no') }} @else {{ (isset($get_member)) ? $get_member->gst_no : '' ; }} @endif" />
+                                            @error('gst_no')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div> --}}
+
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Member Status</label>
                                             <select class="form-control custom-select-icon @error('status') is-invalid @enderror" name="status">
-                                                <option value="1" {{ old('status') == 1 ? 'selected' : '' }} {{ (isset($get_member) && $get_member->status == 1) ? 'selected' : '' ; }}>Active Member</option>
-                                                <option value="2" {{ old('status') == 2 ? 'selected' : '' }} {{ (isset($get_member) && $get_member->status == 2) ? 'selected' : '' ; }}>Inactive Member</option>
+                                                <option value="1" {{ old('status') == 1 ? 'selected' : '' }} {{ (isset($get_member) && $get_member->status == 1) ? 'selected' : '' ; }}>Active</option>
+                                                <option value="2" {{ old('status') == 2 ? 'selected' : '' }} {{ (isset($get_member) && $get_member->status == 2) ? 'selected' : '' ; }}>Inactive</option>
                                             </select>
                                             @error('status')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
-                                    @if(empty($get_member))
+                                    {{-- @if(empty($get_member))
                                      <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Password</label>
@@ -120,7 +113,7 @@
                                             @enderror
                                         </div>
                                     </div>
-                                    @endif
+                                    @endif --}}
                                 </div>
                             </div>
                             <div class="card-footer bg-none d-flex p-3">

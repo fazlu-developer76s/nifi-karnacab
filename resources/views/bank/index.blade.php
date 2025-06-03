@@ -58,7 +58,8 @@
                                             <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
-                                    </div><div class="col-md-6">
+                                    </div>
+                                    <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">IFSC Code</label>
                                             <input class="form-control @error('ifsc_code') is-invalid @enderror" type="text" name="ifsc_code" placeholder="Enter IFSC Code" value="@if(empty($get_bank)){{ old('ifsc_code') }}@else {{ (isset($get_bank)) ? $get_bank->ifsc_code : '' ; }} @endif" />
@@ -69,40 +70,27 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label">Type</label>
-                                            <select class="form-control custom-select-icon @error('type') is-invalid @enderror" name="type">
-                                                <option value="1" {{ old('type') == 1 ? 'selected' : '' }} {{ (isset($get_bank) && $get_bank->type == 1) ? 'selected' : '' ; }}>Account</option>
-                                                <option value="2" {{ old('type') == 2 ? 'selected' : '' }} {{ (isset($get_bank) && $get_bank->type == 2) ? 'selected' : '' ; }}>UPI</option>
+                                            <label class="form-label">UPI ID</label>
+                                            <input class="form-control @error('upi_id') is-invalid @enderror" type="text" name="upi_id" placeholder="Enter UPI ID" value="@if(empty($get_bank)){{ old('upi_id') }}@else {{ (isset($get_bank)) ? $get_bank->upi_id : '' ; }} @endif" />
+                                            @error('upi_id')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    @if(!empty($get_bank->is_bank_active))
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Is Bank Active</label>
+                                            <select class="form-control custom-select-icon @error('is_bank_active') is-invalid @enderror" name="is_bank_active">
+                                                <option value="1" {{ old('is_bank_active') == 1 ? 'selected' : '' }} {{ (isset($get_bank) && $get_bank->is_bank_active == 1) ? 'selected' : '' ; }}>Active</option>
+                                                <option value="2" {{ old('is_bank_active') == 2 ? 'selected' : '' }} {{ (isset($get_bank) && $get_bank->is_bank_active == 2) ? 'selected' : '' ; }}>Inactive</option>
                                             </select>
                                             @error('type')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Used For</label>
-                                            <select class="form-control custom-select-icon @error('used_for') is-invalid @enderror" name="used_for">
-                                                <option value="1" {{ old('used_for') == 1 ? 'selected' : '' }} {{ (isset($get_bank) && $get_bank->used_for == 1) ? 'selected' : '' ; }}>Collection</option>
-                                                <option value="2" {{ old('used_for') == 2 ? 'selected' : '' }} {{ (isset($get_bank) && $get_bank->used_for == 2) ? 'selected' : '' ; }}>Disbursment</option>
-                                            </select>
-                                            @error('type')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Status</label>
-                                            <select class="form-control custom-select-icon @error('status') is-invalid @enderror" name="status">
-                                                <option value="1" {{ old('status') == 1 ? 'selected' : '' }} {{ (isset($get_bank) && $get_bank->status == 1) ? 'selected' : '' ; }}>Active</option>
-                                                <option value="2" {{ old('status') == 2 ? 'selected' : '' }} {{ (isset($get_bank) && $get_bank->status == 2) ? 'selected' : '' ; }}>Inactive</option>
-                                            </select>
-                                            @error('status')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
+                                    @endif
                                 </div>
                             </div>
                             <div class="card-footer bg-none d-flex p-3">
@@ -128,8 +116,8 @@
                                         <th class="text-nowrap">Acc. No</th>
                                         <th class="text-nowrap">Bank Name</th>
                                         <th class="text-nowrap">IFSC Code</th>
-                                        <th class="text-nowrap">Type</th>
-                                        <th class="text-nowrap">Used For</th>
+                                        <th class="text-nowrap">UPI ID</th>
+                                        <th class="text-nowrap">Is Bank Active</th>
                                         <th class="text-nowrap">Created Date</th>
                                         <th class="text-nowrap">Status</th>
                                         <th class="text-nowrap">Action</th>
@@ -144,8 +132,9 @@
                                         <td>{{ $bank->account_no }}</td>
                                         <td>{{ $bank->bank_name }}</td>
                                         <td>{{ $bank->ifsc_code }}</td>
-                                        <td>{{ ($bank->type==1) ? 'Account' : 'UPI'; }}</td>
-                                        <td>{{ ($bank->used_for==1) ? 'Collection' : 'Disbursement'; }}</td>
+                                        <td>{{ $bank->upi_id }}</td>
+                                        <td>{{ ($bank->is_bank_active==1) ? 'Active' : 'Inactive'; }}</td>
+                                        
                                         <td>{{ \Carbon\Carbon::parse($bank->created_at)->format('d F Y h:i A') }}</td>
                                         <td>
                                             <div class="form-check form-switch">

@@ -45,7 +45,7 @@
                                             <label class="form-label">Logo</label>
                                             <input type="file" name="logo" class="form-control">
                                             @if($company->logo)
-                                            <img src="{{ asset('storage/'.$company->logo) }}" style="max-width: 100%; height: auto;">
+                                            <img src="{{ asset('storage/'.$company->logo) }}" style="max-width: 20%; height: auto; margin-top:10px;">
                                             @endif
                                             @error('logo')
                                             <div class="invalid-feedback">{{ $message }}</div>
@@ -57,7 +57,7 @@
                                             <label class="form-label">Favicon</label>
                                             <input type="file" name="favicon" class="form-control">
                                             @if($company->favicon)
-                                            <img src="{{ asset('storage/'.$company->favicon) }}" style="max-width: 100%; height: auto;">
+                                            <img src="{{ asset('storage/'.$company->favicon) }}" style="max-width: 20%; height: auto; margin-top:10px;">
                                             @endif
                                             @error('favicon')
                                             <div class="invalid-feedback">{{ $message }}</div>
@@ -93,40 +93,53 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label">Facebook Link</label>
-                                            <input type="url" name="facebook" class="form-control" value="{{ old('facebook', $company->facebook) }}">
-                                            @error('facebook')
+                                            <label class="form-label">Radius In Num</label>
+                                            <input type="number" name="radius" class="form-control" value="{{ old('radius', $company->radius) }}" required>
+                                            @error('radius')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-6 d-none">
                                         <div class="mb-3">
-                                            <label class="form-label">Twitter Link</label>
-                                            <input type="url" name="twitter" class="form-control" value="{{ old('twitter', $company->twitter) }}">
-                                            @error('twitter')
+                                            <label class="form-label">Booking Percentage</label>
+                                            <input type="number" name="booking_percentage" class="form-control" value="{{ old('booking_percentage', $company->booking_percentage) }}" required>
+                                            @error('booking_percentage')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+
+                                    <div class="col-md-6 d-none">
                                         <div class="mb-3">
-                                            <label class="form-label">Instagram Link</label>
-                                            <input type="url" name="instagram" class="form-control" value="{{ old('instagram', $company->instagram) }}">
-                                            @error('instagram')
+                                            <label class="form-label">Booking Tax</label>
+                                            <input type="number" name="booking_tax" class="form-control" value="{{ old('booking_tax', $company->booking_tax) }}" required>
+                                            @error('booking_tax')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+
+                                    <div class="col-md-6 d-none">
                                         <div class="mb-3">
-                                            <label class="form-label">LinkedIn Link</label>
-                                            <input type="url" name="linkedin" class="form-control" value="{{ old('linkedin', $company->linkedin) }}">
-                                            @error('linkedin')
+                                            <label class="form-label">Booking Post Percentage</label>
+                                            <input type="number" name="booking_post_percentage" class="form-control" value="{{ old('booking_post_percentage', $company->booking_post_percentage) }}" required>
+                                            @error('booking_post_percentage')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
+
+                                    <div class="col-md-6 d-none">
+                                        <div class="mb-3">
+                                            <label class="form-label">Booking Post TDS</label>
+                                            <input type="number" name="booking_post_tds" class="form-control" value="{{ old('booking_post_tds', $company->booking_post_tds) }}" required>
+                                            @error('booking_post_tds')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
+
                                     {{-- <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Member Status</label>

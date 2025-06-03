@@ -21,7 +21,6 @@
     type="text/javascript"></script>
 <script src="{{ asset('assets/js/demo/table-manage-default.demo.js') }}" type="text/javascript"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput.min.js"></script>
-
 <script src="https://cdn.ckeditor.com/4.21.0/standard/ckeditor.js"></script>
 <script>
     CKEDITOR.replace('editor');
@@ -85,91 +84,148 @@
         });
         return false;
     }
+
+    function updatePaymentStatus(id) {
+
+    var csrfToken = $('meta[name="csrf-token"]').attr('content');
+    var transactionAmount = $("#transaction_amount" + id).val();
+    var paymentStatus = $("#payment_status" + id).val();
+    if(paymentStatus == 1){
+        alert('Please Select Paid Option.');
+        return false;
+    }
+    var fileInput = $("#file_upload" + id)[0];
+
+    // Validate transaction amount
+    if (!transactionAmount || isNaN(transactionAmount) || transactionAmount <= 0) {
+        alert('Please enter a valid amount.');
+        return false;
+    }
+
+    // Validate file input
+    if (!fileInput || fileInput.files.length === 0) {
+        alert('Please select a file to upload.');
+        return false;
+    }
+
+    var formData = new FormData();
+    formData.append('_token', csrfToken);
+    formData.append('transaction_amount', transactionAmount);
+    formData.append('payment_status', paymentStatus);
+    formData.append('id', id);
+    formData.append('file', fileInput.files[0]);
+
+    $.ajax({
+        url: "{{ route('update.payment.status') }}",
+        type: 'POST',
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function(response) {
+            console.log(response);
+            if (response === "OK") {
+                alert(response.message || "Payment status updated successfully.");
+                window.location.reload();
+            } else {
+                alert('Failed to update payment status: ' + (response.message || 'Unknown error.'));
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', error);
+            alert('An error occurred while updating payment status. Please try again.');
+        }
+    });
+
+    return false;
+}
+
+
+
+    function is_user_verified(table_name, id) {
+        var csrfToken = $('meta[name="csrf-token"]').attr('content');
+        if ($("#is_user_verified" + id + "").is(':checked')) {
+            var status = 1;
+        } else {
+            var status = 2;
+        }
+        $.ajax({
+            url: "{{ route('user.verified') }}",
+            type: 'post',
+            data: {
+                _token: csrfToken,
+                table_name: table_name,
+                id: id,
+                status: status
+            },
+            success: function(response) {
+                var routeUrl = "{{ route('approved.member') }}";
+                window.location.href = routeUrl;
+                console.log(response);
+            }
+        });
+        return false;
+    }
+</script>
+<script>
+    function ChangeStatusApproved(table_name, id) {
+        if (confirm('Are you sure you want to approve')) {
+
+            var csrfToken = $('meta[name="csrf-token"]').attr('content');
+            if ($("#flexSwitchCheckDefaultproperty" + id + "").is(':checked')) {
+                var status = 1;
+            } else {
+                var status = 2;
+            }
+
+            $.ajax({
+                url: "{{ route('change.status.property') }}",
+                type: 'post',
+                data: {
+                    _token: csrfToken,
+                    table_name: table_name,
+                    id: id,
+                    status: status
+                },
+                success: function(response) {
+                    var routeUrl = "{{ route('property') }}";
+                    window.location.href = routeUrl;
+                    console.log(response);
+                }
+            });
+            return false;
+        } else {
+            if ($("#flexSwitchCheckDefaultproperty" + id + "").is(':checked')) {
+                $("#flexSwitchCheckDefaultproperty" + id + "").prop('checked', false);
+            }
+        }
+    }
 </script>
 <script>
     fetchNotes();
 
     function SaveNotes() {
-        var notes = $('#notes').val().trim();
-        var user_id = $('#user_id').val();
         var status = $('#status').val();
         var lead_id = $('#lead_id').val();
-        var hidden_id = $('#hidden_id').val();
-        var route_id = $("#select_route_id").val();
         var csrfToken = $('meta[name="csrf-token"]').attr('content');
-
-        if (notes === '') {
-            Swal.fire("Error!", "Notes Title Required!", "error"); // Correct SweetAlert2 syntax
-            return false;
-        }
         if (status == 5) {
             if (route_id === '') {
                 Swal.fire("Error!", "Please Select Route!", "error"); // Correct SweetAlert2 syntax
                 return false;
             }
         }
-
         $.ajax({
             url: "{{ route('notes.create') }}",
             type: 'POST',
             data: {
                 _token: csrfToken,
-                title: notes,
-                user_id: user_id,
                 status: status,
                 lead_id: lead_id,
-                route_id: route_id,
-                hidden_id: hidden_id
             },
             success: function(response) {
-                if (response == 2) {
-                    Swal.fire("Error!", "Route Does Not Exist for This Zipcode", "error");
-                    return false;
-                }
-
                 if (response == 1) {
-                    Swal.fire({
-                        title: "Success!",
-                        text: "Lead Qualified Successfully!",
-                        icon: "success",
-                        timer: 2000,
-                        showConfirmButton: false
-                    }).then(function() {
-                        var routeUrl = "{{ route('lead') }}";
-                        window.location.href = routeUrl;
-                    });
-                }
+                    window.location.reload();
 
-                let loan_status;
-                switch (status) {
-                    case '1':
-                        loan_status = "Pending";
-                        break;
-                    case '2':
-                        loan_status = "View";
-                        break;
-                    case '3':
-                        loan_status = "Under Discussion";
-                        break;
-                    case '4':
-                        loan_status = "Pending Kyc";
-                        break;
-                    case '5':
-                        loan_status = "Qualified";
-                        break;
-                    case '6':
-                        loan_status = "Rejected";
-                        break;
-                    default:
-                        loan_status = "Unknown";
-                        break;
                 }
-
-                $("#fetch_loan_status").html("<p>" + loan_status + "</p>");
-                console.log(response);
-                fetchNotes();
-                $("#notes").val('');
-                $("#hidden_id").val('');
             },
             error: function(xhr, status, error) {
                 console.error(xhr.responseText);
@@ -434,59 +490,57 @@
     }
 </script>
 <script>
-    function Deletesubimage(id) {
-        var csrfToken = $('meta[name="csrf-token"]').attr('content');
-        if(confirm('Are you sure you want to delete this image?')){
+    function OpenAssignModal(current_user_id, lead_id, lead_create_user_id) {
+        if (current_user_id) {
 
-            $.ajax({
-                url: "{{ route('delete.image') }}",
-                type: 'POST',
-                data: {
-                    _token: csrfToken,
-                    id: id,
-                },
-                success: function(response) {
-                    if (response == 1) {
-                        window.location.reload();
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error(xhr.responseText);
-                    alert("An error occurred while saving the note.");
-                }
-            });
+            $("#lead_create_user_id").val(lead_create_user_id);
+            $("#current_user_id").val(current_user_id);
+            $("#current_lead_id").val(lead_id);
         }
-        return false;
     }
-</script>
-<script>
-    $(document).on('click', 'input[name="add_permission"]', function() {
-        let isChecked = $(this).prop("checked");
-        let packageId = $(this).data('package');
-        let serviceId = $(this).data('service');
-        if (isChecked) {
-            status = 1;
-        } else {
-            status = 2;
+
+    function AssignLead() {
+
+        $(".assign_error").text('');
+        $(".assign_success").text('');
+        var current_user_id = $("#current_user_id").val();
+        var assign_user_id = $("#selectOption").val();
+        var lead_id = $("#current_lead_id").val();
+        var lead_create_user_id = $("#lead_create_user_id").val();
+
+        if (!assign_user_id) {
+            $(".assign_error").text("Please Select Assign User");
+            return false;
         }
-        let csrfToken = $('meta[name="csrf-token"]').attr('content');
+        if (lead_create_user_id == assign_user_id) {
+            $(".assign_error").text("Lead Already Assigned to This User");
+            return false;
+        }
+
+        var csrfToken = $('meta[name="csrf-token"]').attr('content');
         $.ajax({
-            url: "{{ route('addservice.package') }}",
-            type: 'PUT',
+            url: "{{ route('assign.lead') }}",
+            type: 'POST',
             data: {
                 _token: csrfToken,
-                package_id: packageId,
-                service_id: serviceId,
-                status: status
+                current_user_id: current_user_id,
+                assign_user_id: assign_user_id,
+                lead_id: lead_id,
             },
             success: function(response) {
-                console.log(response);
+                $(".assign_error").text('');
+                $(".assign_success").text("Lead Assigned Successfully");
+                setTimeout(() => {
+                    var routeUrl = "{{ route('enquiry') }}";
+                    window.location.href = routeUrl;
+                }, 2000);
             },
-            error: function(xhr) {
-                console.error("An error occurred:", xhr.responseText);
+            error: function(xhr, status, error) {
+                console.error(xhr.responseText);
+                alert("An error occurred while assigning the lead.");
             }
         });
-    });
+    }
 </script>
 </body>
 

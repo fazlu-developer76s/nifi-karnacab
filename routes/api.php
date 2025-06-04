@@ -26,7 +26,7 @@ Route::get('get-city/{id}', [ApiController::class, 'get_city']);
 Route::get('get-vehicle', [ApiController::class, 'get_vehicle']);
 // Route::get('pages/{title}',[ApiController::class, 'get_pages']);
 Route::middleware(['jwt'])->group(function () {
-    
+
     Route::post('user/image-upload', [ApiController::class, 'uploadImage']);
     Route::post('user/update-profile', [AuthController::class, 'update_profile']);
     Route::get('user/get-state', [ApiController::class, 'get_state']);
@@ -38,6 +38,8 @@ Route::middleware(['jwt'])->group(function () {
     Route::post('user/get-suggestion', [ApiController::class, 'get_suggestion']);
     Route::get('user/fetch-booking', [ApiController::class, 'fetch_booking']);
     Route::get('user/fetch-booking-user/{id}', [ApiController::class, 'fetch_booking_user']);
+    Route::get('user/fetch-booking-user', [ApiController::class, 'fetch_booking_user_single']);
+    Route::get('user/activate-booking-get', [ApiController::class, 'activate_booking_get']);
     Route::post('user/activate-booking/{id}', [ApiController::class, 'activate_booking']);
     Route::post('user/update-booking-status/{id}', [ApiController::class, 'update_booking_status']);
     Route::get('user/accept-booking/{id}', [ApiController::class, 'accept_booking']);

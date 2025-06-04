@@ -247,6 +247,9 @@ class AuthController extends Controller
         $user->password = Hash::make($request->password);
         $user->status = 1;
         $user->role_id = $request->role_id;
+        if($request->fcm_token){
+            $user->fcm_token = $request->fcm_token;
+        }
         $user->created_at = now();
         $user->updated_at = now();
         $user->save();
@@ -302,6 +305,9 @@ class AuthController extends Controller
             }
             $this->ExpireOTP($getOTP->id);
             $user = DB::table('users as a')->leftJoin('roles as b', 'a.role_id', 'b.id')->select('a.*', 'b.title as role_type')->where('a.' . $request->type . '', $request->field_value)->first();
+            DB::table('users')
+                ->where('id', $user->id)
+                ->update(['fcm_token' => $request->fcm_token]);
             if (!$user) {
                 return response()->json([
                     'status' => "Error",

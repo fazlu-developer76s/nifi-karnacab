@@ -71,15 +71,12 @@
                                         </td>
                                         @endif
                                         <td>
-                                            @if($firstSegment = Request::segment(1) ===  "borrower" || $firstSegment = Request::segment(1) ===  "userlocation")
-                                            <a href="{{ route('member.view', $member->id) }}" class="text-primary me-2">
-                                                <i class="fa fa-eye"></i>
-                                            </a>
-                                            @endif
+
+                                            @if($member->role_id == 2)
                                             <a href="{{ route('member.view', $member->id) }}" class="text-warning me-2" target="_blank">
                                                 <i class="fa fa-eye"></i>
                                             </a>
-                                            @if($firstSegment = Request::segment(1) !=  "borrower" && $firstSegment = Request::segment(1) !=  "userlocation")
+                                            @endif
                                             <a href="{{ route('member.edit', $member->id) }}" class="text-primary me-2">
                                                 <i class="fa fa-edit"></i>
                                             </a>
@@ -91,7 +88,6 @@
                                                     <i class="fa fa-trash"></i>
                                                 </button>
                                             </form>
-                                            @endif
                                         </td>
                                     </tr>
                                     @endforeach

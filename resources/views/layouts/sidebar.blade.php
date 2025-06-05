@@ -110,11 +110,16 @@
                     </div>
                     <div class="menu-item">
                         <a href="{{ route('booking',3) }}" class="menu-link ">
-                            <div class="menu-text"> Complete Booking</div>
+                            <div class="menu-text"> Active Booking</div>
                         </a>
                     </div>
                     <div class="menu-item">
                         <a href="{{ route('booking',4) }}" class="menu-link ">
+                            <div class="menu-text"> Complete Booking</div>
+                        </a>
+                    </div>
+                    <div class="menu-item">
+                        <a href="{{ route('booking',5) }}" class="menu-link ">
                             <div class="menu-text"> Cancel Booking</div>
                         </a>
                     </div>

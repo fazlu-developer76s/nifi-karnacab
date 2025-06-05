@@ -129,9 +129,12 @@
                 @php $head_booking_status = "Accept"; @endphp
             @break
             @case(3)
-                @php $head_booking_status = "Complete"; @endphp
+                @php $head_booking_status = "Active"; @endphp
             @break
             @case(4)
+                @php $head_booking_status = "Complete"; @endphp
+            @break
+            @case(5)
                 @php $head_booking_status = "Cancel"; @endphp
             @break
             @default

@@ -32,6 +32,9 @@ use App\Helpers\Global_helper;
 use App\Models\Vehicle;
 use Illuminate\Support\Facades\Mail;
 use Svg\Tag\Rect;
+use Kreait\Firebase\Factory;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Notification;
 
 class ApiController extends Controller
 {
@@ -549,6 +552,11 @@ class ApiController extends Controller
         $booking->trip_distance_km = $request->trip_distance_km;
         $booking->rate_per_km = $request->rate_per_km;
         $booking->calculated_fare = $request->calculated_fare;
+        $get_discount_amount = $request->calculated_fare * (Global_helper::companyDetails()->discount / 100);
+
+        $booking->discount = $request->calculated_fare + $get_discount_amount;
+
+
         $booking->captain_distance_text = $request->captain_distance_text;
         $booking->captain_duration_text = $request->captain_duration_text;
         $booking->trip_distance_text = $request->trip_distance_text;
@@ -566,7 +574,20 @@ class ApiController extends Controller
         $get_data = $this->get_single_booking_vehicle($request, $request->vehicle_id);
         $responseData = $get_data->getData();
         $new_data = $responseData->data;
+
+        Global_helper::SaveNotification($booking->id, $request->user->id,  'New Booking', 'New Booking Created');
         foreach ($new_data as $row) {
+
+        $this->sendNotificationToUser($row->captain_info->fcm_token,'New Booking', "New Booking Found");
+                DB::table('tbl_notification')->insert([
+                'booking_id' => $booking->id,
+                'user_id' => $row->captain_info->id,
+
+                'subject' => 'New Booking',
+                'description' => 'New booking found '
+            ]);
+
+
             DB::table('tbl_booking_log')->insert([
                 'captain_id' => $row->captain_info->id,
                 'booking_id' => $booking->id,
@@ -614,10 +635,10 @@ class ApiController extends Controller
     public function fetch_booking_user_single(Request $request)
     {
         // Fetch booking with status 2 or 3
-    $get_booking = DB::table('tbl_booking')
-                    ->select('id','vehicle_title', 'vehicle_image','user_id','captain_id','current_address as pick_up_location','booking_status')
-                    ->whereIn('booking_status', [2, 3])
-                    ->first();
+        $get_booking = DB::table('tbl_booking')
+            ->select('id', 'vehicle_title', 'vehicle_image', 'user_id', 'captain_id', 'current_address as pick_up_location', 'booking_status', 'otp', 'calculated_fare')
+            ->whereIn('booking_status', [2, 3])
+            ->first();
 
         if (!$get_booking) {
             return response()->json([
@@ -629,7 +650,7 @@ class ApiController extends Controller
         // Attach user or captain info based on role
         if ($request->user->role_id == 2) {
             // Role: Captain
-            $user = DB::table('users')->where('id', $get_booking->user_id)->select('name','mobile_no','image')->first();
+            $user = DB::table('users')->where('id', $get_booking->user_id)->select('name', 'mobile_no', 'image')->first();
             $captain = DB::table('users')->where('id', $get_booking->captain_id)->select('current_address')->first();
 
             $get_booking->user_info = $user;
@@ -637,11 +658,10 @@ class ApiController extends Controller
             // Get current addresses
             $originAddress = $captain->current_address ?? null;
             $destinationAddress = $get_booking->pick_up_location ?? null;
-
         } else {
             // Role: User
 
-            $captain = DB::table('users')->where('id', $get_booking->captain_id)->first();
+            $captain = DB::table('users')->where('id', $get_booking->captain_id)->select('name', 'mobile_no', 'image', 'current_address')->first();
             $get_booking->captain_info = $captain;
             $originAddress = $captain->current_address ?? null;
             $destinationAddress = $get_booking->pick_up_location ?? null;
@@ -686,9 +706,9 @@ class ApiController extends Controller
     public function activate_booking_get(Request $request)
     {
         // Fetch booking with status 2 or 3
-    $get_booking = DB::table('tbl_booking')
-                    ->where('booking_status', 3)
-                    ->first();
+        $get_booking = DB::table('tbl_booking')
+            ->where('booking_status', 3)
+            ->first();
 
         if (!$get_booking) {
             return response()->json([
@@ -700,7 +720,7 @@ class ApiController extends Controller
         // Attach user or captain info based on role
         if ($request->user->role_id == 2) {
             // Role: Captain
-            $user = DB::table('users')->where('id', $get_booking->user_id)->select('name','mobile_no','image')->first();
+            $user = DB::table('users')->where('id', $get_booking->user_id)->select('name', 'mobile_no', 'image')->first();
             $captain = DB::table('users')->where('id', $get_booking->captain_id)->select('current_address')->first();
 
             $get_booking->user_info = $user;
@@ -708,11 +728,10 @@ class ApiController extends Controller
             // Get current addresses
             $originAddress = $captain->current_address ?? null;
             $destinationAddress = $get_booking->current_address ?? null;
-
         } else {
             // Role: User
 
-            $captain = DB::table('users')->where('id', $get_booking->captain_id)->first();
+            $captain = DB::table('users')->where('id', $get_booking->captain_id)->select('name', 'mobile_no', 'image', 'current_address')->first();
             $get_booking->captain_info = $captain;
             $originAddress = $captain->current_address ?? null;
             $destinationAddress = $get_booking->current_address ?? null;
@@ -763,10 +782,17 @@ class ApiController extends Controller
         if (!$get_booking) {
             return response()->json(['status' => 'Error', 'message' => 'Invalid OTP'], 401);
         }
+        $get_user = DB::table('users')->where('id', $get_booking->user_id)->first();
+        $get_captain = DB::table('users')->where('id', $get_booking->captain_id)->first();
         if ($get_booking->booking_status == 2) {
             DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 3]);
             DB::table('tbl_booking_log')->where('captain_id', $request->user->id)->where('booking_id', $id)->update(['status' => 2]);
             DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 3]);
+
+            Global_helper::SaveNotification($id,$get_user->id,'Booking Activated','Your booking has been activated by ' . $get_captain->name);
+            Global_helper::SaveNotification($id,$get_captain->id,'Booking Activated','You have activated the booking of ' . $get_user->name);
+            $this->sendNotificationToUser($get_user->fcm_token,'Booking Activated','Your booking has been activated by ' . $get_captain->name);
+
             return response()->json(['status' => 'OK', 'message' => 'Booking activated successfully'], 200);
         } else {
             return response()->json(['status' => 'Error', 'message' => 'Booking not found'], 404);
@@ -776,6 +802,9 @@ class ApiController extends Controller
     public function update_booking_status(Request $request, $id)
     {
 
+        $get_booking = Booking::where('id', $id)->first();
+        $get_user = DB::table('users')->where('id', $get_booking->user_id)->first();
+        $get_captain = DB::table('users')->where('id', $get_booking->captain_id)->first();
         // accept booking for captain
         if ($request->booking_status == 2) {
             $check_book = Booking::where('user_id', $request->user->id)->where('booking_status', 2)->orWhere('booking_status', 3)->first();
@@ -792,6 +821,14 @@ class ApiController extends Controller
             DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 2, 'captain_id' => $request->user->id]);
             DB::table('tbl_booking_log')->where('captain_id', $request->user->id)->where('booking_id', $id)->update(['status' => 2]);
             DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 2]);
+
+            Global_helper::SaveNotification($id, $get_user->id , 'Booking Accepted', 'Your booking has been accepted by ' . $get_captain->name);
+            Global_helper::SaveNotification($id,$get_captain->id,'Booking Accepted','You have accepted the booking of ' . $get_user->name);
+            $this->sendNotificationToUser($get_user->fcm_token, 'Booking Accepted', 'Your booking has been accepted by ' . $get_captain->name);
+
+
+
+
             return response()->json(['status' => 'OK', 'message' => 'Booking Accepted successfully'], 200);
         }
 
@@ -804,6 +841,12 @@ class ApiController extends Controller
             DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 5, 'captain_id' => $request->user->id]);
             DB::table('tbl_booking_log')->where('captain_id', $request->user->id)->where('booking_id', $id)->update(['status' => 2]);
             DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 5]);
+
+            Global_helper::SaveNotification($id,$get_user->id,'Booking Cancelled','Your booking has been cancelled by ' . $get_captain->name);
+            Global_helper::SaveNotification($id,$get_captain->id,'Booking Cancelled','You have cancelled the booking of ' . $get_user->name);
+            $this->sendNotificationToUser($get_user->fcm_token,'Booking Cancelled','Your booking has been cancelled by ' . $get_captain->name);
+
+
             return response()->json(['status' => 'OK', 'message' => 'Booking Cancel successfully'], 200);
         }
 
@@ -816,6 +859,12 @@ class ApiController extends Controller
             DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 5]);
             DB::table('tbl_booking_log')->where('user_id', $request->user->id)->where('booking_id', $id)->update(['status' => 2]);
             DB::table('tbl_booking_log')->insert(['user_id' => $request->user->id, 'booking_id' => $id, 'booking_type' => 5]);
+
+            Global_helper::SaveNotification($id,$get_captain->id,'Booking Cancelled','The booking has been cancelled by ' . $get_user->name);
+            Global_helper::SaveNotification($id,$get_user->id,'Booking Cancelled','You have cancelled the booking of ' . $get_captain->name);
+            $this->sendNotificationToUser($get_captain->fcm_token,'Booking Cancelled','The booking has been cancelled by ' . $get_user->name);
+
+
             return response()->json(['status' => 'OK', 'message' => 'Booking Cancel successfully'], 200);
         }
 
@@ -829,7 +878,13 @@ class ApiController extends Controller
             DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 4]);
             DB::table('tbl_booking_log')->where('captain_id', $request->user->id)->where('booking_id', $id)->update(['status' => 2]);
             DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 4]);
-            return response()->json(['status' => 'OK', 'message' => 'Booking Accepted successfully'], 200);
+
+            Global_helper::SaveNotification($id,$get_user->id,'Booking Completed','Your booking has been completed by ' . $get_captain->name);
+            Global_helper::SaveNotification($id,$get_captain->id,'Booking Completed','You have completed the booking of ' . $get_user->name);
+            $this->sendNotificationToUser($get_user->fcm_token,'Booking Completed','Your booking has been completed by ' . $get_captain->name);
+
+
+            return response()->json(['status' => 'OK', 'message' => 'Booking Completed successfully'], 200);
         }
     }
 
@@ -1941,5 +1996,29 @@ class ApiController extends Controller
         $pdf = PDF::loadView('company.invoice', $data);
         // return $pdf->download('invoice.pdf');
         return $pdf->stream('invoice.pdf');
+    }
+
+    public function sendNotificationToUser($fcm_token, $title, $body)
+    {
+
+        try {
+            $factory = (new Factory)->withServiceAccount(storage_path('app/firebase/google-services.json'));
+            $messaging = $factory->createMessaging();
+
+            $message = CloudMessage::withTarget('token', $fcm_token)
+                ->withNotification(Notification::create($title, $body))
+                ->withData([
+                    'title' => $title,
+                    'body' => $body,
+                    'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                    'priority' => 'high'
+                ]);
+
+            $messaging->send($message);
+
+            return true;
+        } catch (\Throwable $e) {
+            return true;
+        }
     }
 }

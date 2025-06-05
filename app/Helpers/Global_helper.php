@@ -380,6 +380,19 @@ class Global_helper
     }
 
 
+     public static function SaveNotification($package_id,$user_id,$subject='',$description='',){
+        $insert_notification = DB::table('tbl_notification')->insert([
+            'booking_id' => $package_id,
+            'user_id' => $user_id,
+            'subject' => $subject,
+            'description' => $description
+        ]);
+        if($insert_notification){
+            return true;
+        }
+    }
+
+
 
 
 }

@@ -37,6 +37,7 @@ class CompanyController extends Controller
             'radius' => 'required|numeric|min:1',
             'booking_post_percentage' => 'required|numeric|min:0',
             'booking_post_tds' => 'required|numeric|min:0',
+            'discount' => 'required|numeric',
         ]);
 
         // Find the company
@@ -60,6 +61,7 @@ class CompanyController extends Controller
         $company->email = $request->email;
         $company->radius = $request->radius;
         $company->mobile = $request->mobile;
+        $company->discount = $request->discount;
 
 
         // Save the updated company

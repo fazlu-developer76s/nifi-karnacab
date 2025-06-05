@@ -25,6 +25,7 @@ Route::get('get-state', [ApiController::class, 'get_state']);
 Route::get('get-city/{id}', [ApiController::class, 'get_city']);
 Route::get('get-vehicle', [ApiController::class, 'get_vehicle']);
 // Route::get('pages/{title}',[ApiController::class, 'get_pages']);
+Route::post('notification', [ApiController::class, 'sendNotificationToUser']);
 Route::middleware(['jwt'])->group(function () {
 
     Route::post('user/image-upload', [ApiController::class, 'uploadImage']);

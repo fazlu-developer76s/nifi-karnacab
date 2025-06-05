@@ -100,6 +100,15 @@
                                             @enderror
                                         </div>
                                     </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Discount (In Percentage)</label>
+                                            <input type="number" name="discount" class="form-control" value="{{ old('discount', $company->discount) }}" required>
+                                            @error('discount')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
                                     <div class="col-md-6 d-none">
                                         <div class="mb-3">
                                             <label class="form-label">Booking Percentage</label>

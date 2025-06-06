@@ -617,12 +617,21 @@ class ApiController extends Controller
         return response()->json(['status' => 'OK', 'message' => 'Booking fetched successfully', 'data' => $new_data], 200);
     }
 
+    public function fetch_notification(Request $request){
+        $get_notification = DB::table('tbl_notification')->where('user_id',$request->user->id)->orderBy('id','desc')->get();
+        if ($get_notification) {
+            return response()->json(['status' => 'OK', 'message' => 'Notification fetched successfully', 'data' => $get_notification], 200);
+        } else {
+            return response()->json(['status' => 'Error', 'message' => 'No notification found'], 404);
+        }
+    }
+
 
     public function fetch_booking_user(Request $request, $id)
     {
         $get_booking = DB::table('tbl_booking')->where('id', $id)->first();
 
-        if ($get_booking->booking_status == 2) {
+        if ($get_booking->booking_status == 2 || $get_booking->booking_status == 4 || $get_booking->booking_status == 3) {
             $get_booking->captain_info = DB::table('users')->where('id', $get_booking->captain_id)->first();
         }
         if ($get_booking) {
@@ -807,6 +816,7 @@ class ApiController extends Controller
         $get_captain = DB::table('users')->where('id', $get_booking->captain_id)->first();
         // accept booking for captain
         if ($request->booking_status == 2) {
+
             $check_book = Booking::where('user_id', $request->user->id)->where('booking_status', 2)->orWhere('booking_status', 3)->first();
             if ($check_book) {
                 return response()->json([
@@ -822,6 +832,7 @@ class ApiController extends Controller
             DB::table('tbl_booking_log')->where('captain_id', $request->user->id)->where('booking_id', $id)->update(['status' => 2]);
             DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 2]);
 
+            $get_captain = DB::table('users')->where('id', $request->user->id)->first();
             Global_helper::SaveNotification($id, $get_user->id , 'Booking Accepted', 'Your booking has been accepted by ' . $get_captain->name);
             Global_helper::SaveNotification($id,$get_captain->id,'Booking Accepted','You have accepted the booking of ' . $get_user->name);
             $this->sendNotificationToUser($get_user->fcm_token, 'Booking Accepted', 'Your booking has been accepted by ' . $get_captain->name);
@@ -841,7 +852,7 @@ class ApiController extends Controller
             DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 5, 'captain_id' => $request->user->id]);
             DB::table('tbl_booking_log')->where('captain_id', $request->user->id)->where('booking_id', $id)->update(['status' => 2]);
             DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 5]);
-
+            $get_captain = DB::table('users')->where('id', $request->user->id)->first();
             Global_helper::SaveNotification($id,$get_user->id,'Booking Cancelled','Your booking has been cancelled by ' . $get_captain->name);
             Global_helper::SaveNotification($id,$get_captain->id,'Booking Cancelled','You have cancelled the booking of ' . $get_user->name);
             $this->sendNotificationToUser($get_user->fcm_token,'Booking Cancelled','Your booking has been cancelled by ' . $get_captain->name);
@@ -859,10 +870,13 @@ class ApiController extends Controller
             DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 5]);
             DB::table('tbl_booking_log')->where('user_id', $request->user->id)->where('booking_id', $id)->update(['status' => 2]);
             DB::table('tbl_booking_log')->insert(['user_id' => $request->user->id, 'booking_id' => $id, 'booking_type' => 5]);
+            if(!empty($get_booking->cpatain_id)){
+                Global_helper::SaveNotification($id,$get_captain->id,'Booking Cancelled','The booking has been cancelled by ' . $get_user->name);
+                $this->sendNotificationToUser($get_captain->fcm_token,'Booking Cancelled','The booking has been cancelled by ' . $get_user->name);
 
-            Global_helper::SaveNotification($id,$get_captain->id,'Booking Cancelled','The booking has been cancelled by ' . $get_user->name);
-            Global_helper::SaveNotification($id,$get_user->id,'Booking Cancelled','You have cancelled the booking of ' . $get_captain->name);
-            $this->sendNotificationToUser($get_captain->fcm_token,'Booking Cancelled','The booking has been cancelled by ' . $get_user->name);
+            }
+            $get_captain = DB::table('users')->where('id', $get_booking->captain_id)->first();
+            Global_helper::SaveNotification($id,$get_user->id,'Booking Cancelled','You have cancelled the booking of ');
 
 
             return response()->json(['status' => 'OK', 'message' => 'Booking Cancel successfully'], 200);
@@ -878,7 +892,7 @@ class ApiController extends Controller
             DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 4]);
             DB::table('tbl_booking_log')->where('captain_id', $request->user->id)->where('booking_id', $id)->update(['status' => 2]);
             DB::table('tbl_booking_log')->insert(['captain_id' => $request->user->id, 'booking_id' => $id, 'user_id' => $get_booking->user_id, 'booking_type' => 4]);
-
+            $get_captain = DB::table('users')->where('id', $get_booking->captain_id)->first();
             Global_helper::SaveNotification($id,$get_user->id,'Booking Completed','Your booking has been completed by ' . $get_captain->name);
             Global_helper::SaveNotification($id,$get_captain->id,'Booking Completed','You have completed the booking of ' . $get_user->name);
             $this->sendNotificationToUser($get_user->fcm_token,'Booking Completed','Your booking has been completed by ' . $get_captain->name);
@@ -1020,11 +1034,11 @@ class ApiController extends Controller
 
         $query  = DB::table('tbl_booking')->where('status', 1);
         if ($id == 1) {
-            $query->where('user_id', $request->user->id);
+            $query->whereIn('booking_status', [4, 5])->where('user_id', $request->user->id);
         } else {
-            $query->where('captain_id', $request->user->id);
+            $query->whereIn('booking_status', [4, 5])->where('captain_id', $request->user->id);
         }
-        $booking = $query->get();
+        $booking = $query->orderBy('id','desc')->get();
         if ($booking) {
             return response()->json(['status' => 'OK', 'message' => 'Booking fetched successfully', 'data' => $booking], 200);
         } else {

@@ -38,6 +38,7 @@ Route::middleware(['jwt'])->group(function () {
     Route::post('user/get-single-booking-vehicle/{id}', [ApiController::class, 'get_single_booking_vehicle']);
     Route::post('user/get-suggestion', [ApiController::class, 'get_suggestion']);
     Route::get('user/fetch-booking', [ApiController::class, 'fetch_booking']);
+    Route::get('user/fetch-notification', [ApiController::class, 'fetch_notification']);
     Route::get('user/fetch-booking-user/{id}', [ApiController::class, 'fetch_booking_user']);
     Route::get('user/fetch-booking-user', [ApiController::class, 'fetch_booking_user_single']);
     Route::get('user/activate-booking-get', [ApiController::class, 'activate_booking_get']);

@@ -119,7 +119,7 @@ class LeadController extends Controller
         $bookings = [];
         foreach ($get_booking as $booking){
             $booking->post_user = DB::table('users')->where('id', $booking->user_id)->first();
-            $booking->accept_user = DB::table('users')->where('id', $booking->accept_user_id)->first();
+            $booking->accept_user = DB::table('users')->where('id', $booking->captain_id)->first();
             $booking->statement = DB::table('tbl_statement as a')->leftJoin('users as b','a.user_id','=','b.id')->select('a.*','b.name as user_name')->where('a.booking_id',$booking->id)->get();
             $booking->booking_log = DB::table('tbl_booking_log as a')->leftJoin('users as b' , 'a.user_id','=','b.id')->select('a.*','b.name as user_name')->where('booking_id',$booking->id)->get();
             $bookings[] = $booking;

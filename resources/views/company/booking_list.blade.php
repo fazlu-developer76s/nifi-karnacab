@@ -190,16 +190,18 @@
                                     <tr>
                                         <th width="1%"></th>
                                         <th class="text-nowrap">Username</th>
-                                        <th class="text-nowrap">Full Name</th>
-                                        <th class="text-nowrap">Email</th>
-                                        <th class="text-nowrap">Phone</th>
-                                        <th class="text-nowrap">Num Of People</th>
-                                        <th class="text-nowrap">Pick Date</th>
-                                        <th class="text-nowrap">Pick Time</th>
+                                        @if(isset($book) && $book[0]->booking_status != 1)
+                                        <th class="text-nowrap">Accept User</th>
+                                        @endif
+                                        <th class="text-nowrap">Vehicle</th>
+                                        <th class="text-nowrap">Vehicle Image</th>
+                                        <th class="text-nowrap">Seater</th>
                                         <th class="text-nowrap">Pick Location</th>
                                         <th class="text-nowrap">Drop Location</th>
-                                        <th class="text-nowrap">Seater</th>
-                                        <th class="text-nowrap">Amount</th>
+                                        <th class="text-nowrap">Distance</th>
+                                        <th class="text-nowrap">In Km Amount</th>
+                                        <th class="text-nowrap">In Km Extra Charges</th>
+                                        <th class="text-nowrap">Booking Amount</th>
                                         <th class="text-nowrap">Status</th>
                                         <th class="text-nowrap">Created At</th>
                                         <th class="text-nowrap">Action</th>
@@ -223,20 +225,22 @@
                                     @break
                                     @default
                                         @php $booking_status = "N/A"; @endphp
-                                @endswitch
+                                    @endswitch
                                     <tr class="odd gradeX">
                                         <td width="1%" class="fw-bold text-dark">{{ $loop->iteration }}</td>
                                         <td>{{ ucwords($bookings[0]->post_user->name) }}</td>
-                                        <td>{{ ucwords($book->name) }}</td>
-                                        <td>{{ $book->email_id }}</td>
-                                        <td>{{ $book->mobile_no }}</td>
-                                        <td>{{ $book->num_of_people }}</td>
-                                        <td>{{ \Carbon\Carbon::parse(@$booking_status->pick_up_date)->format('d F Y') ?? 'N/A' }}
-                                        <td>{{ \Carbon\Carbon::parse(@$booking_status->pick_up_time)->format('h:i A') ?? 'N/A' }}
-                                        <td>{{ ucwords($book->pick_up_location) }}</td>
-                                        <td>{{ ucwords($book->drop_us_location) }}</td>
-                                        <td>{{ $book->seater }}</td>
-                                        <td>{{ $book->booking_amount }}</td>
+                                       @if($book->booking_status != 1)
+                                       <td>{{ ucwords($bookings[0]->accept_user->name) }}</td>
+                                       @endif
+                                        <td>{{ ucwords($book->vehicle_title) }}</td>
+                                        <td><img src="{{ Storage::url($book->vehicle_image) }}" class="img-fluid" style="max-width: 80px; height: auto;" /></td>
+                                        <td>{{ ucwords($book->vehicle_seater) }}</td>
+                                         <td>{{ $book->current_address }}</td>
+                                        <td>{{ $book->drop_address }}</td>
+                                        <td>{{ ucwords($book->trip_distance_text) }}</td>
+                                        <td>{{ $book->rate_per_km }} ₹</td>
+                                        <td>{{ $book->vehicle_extra_charges }} ₹</td>
+                                        <td>{{ $book->calculated_fare }} ₹</td>
                                         <td>{{ $booking_status }}</td>
                                         <td>{{ \Carbon\Carbon::parse(@$booking_status->created_at)->format('d F Y h:i A') ?? 'N/A' }}
                                         <td>

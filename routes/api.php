@@ -31,6 +31,7 @@ Route::middleware(['jwt'])->group(function () {
     Route::post('user/image-upload', [ApiController::class, 'uploadImage']);
     Route::post('user/update-profile', [AuthController::class, 'update_profile']);
     Route::get('user/get-state', [ApiController::class, 'get_state']);
+    Route::get('user/get-district/{id}', [ApiController::class, 'get_district']);
 
     // Booking Route
     Route::post('user/create-booking', [ApiController::class, 'create_booking']);

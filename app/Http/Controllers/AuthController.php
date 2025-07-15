@@ -29,7 +29,8 @@ class AuthController extends Controller
                 'regex:/^[6-9][0-9]{9}$/',
             ]
         ]);
-        $get_user = User::where('status',1)->where('mobile_no',$request->mobile_no)->first();
+
+        $get_user = User::where('status',1)->where('mobile_no',$request->mobile_no)->where('role_id',$request->role_id)->first();
         if($get_user && $request->type == "register"){
             return response()->json([
                 'status' => "ERROR",
@@ -103,7 +104,7 @@ class AuthController extends Controller
             ],
         ]);
 
-        $get_user = User::where('status',1)->where('email',$request->email)->first();
+        $get_user = User::where('status',1)->where('email',$request->email)->where('role_id',$request->role_id)->first();
         if($get_user && $request->type == "register"){
             return response()->json([
                 'status' => "ERROR",
@@ -120,10 +121,10 @@ class AuthController extends Controller
         $otp = 123456;
         $email  = $request->email;
         $type  = $request->type;
-        if ($email != "fazlu.developer@gmail.com") {
-            $otp = rand(100000, 999999);
-            Mail::to($email)->send(new OtpMail($otp, $this->company_email, $this->company_name, $this->company_email));
-        }
+        // if ($email != "fazlu.developer@gmail.com") {
+        //     $otp = rand(100000, 999999);
+        //     Mail::to($email)->send(new OtpMail($otp, $this->company_email, $this->company_name, $this->company_email));
+        // }
         if ($type == "register") {
             $module_type = 2;
         } else if ($type == "forget_password") {
@@ -230,7 +231,7 @@ class AuthController extends Controller
         // }
 
         $user = User::where(function ($query) use ($request) {
-            $query->where('mobile_no', $request->mobile_no)
+            $query->where('mobile_no', $request->mobile_no)->where('role_id',$request->role_id)
                 ->orWhere('email', $request->email);
         })->where('status', '!=', 3)->first();
         if ($user) {
@@ -253,7 +254,7 @@ class AuthController extends Controller
         $user->created_at = now();
         $user->updated_at = now();
         $user->save();
-        $get_user = User::where('mobile_no', $request->mobile_no)
+        $get_user = User::where('mobile_no', $request->mobile_no)->where('role_id',$request->role_id)
             ->where('status', 1)
             ->first();
         $role_details = DB::table('roles')
@@ -304,7 +305,7 @@ class AuthController extends Controller
                 ], 401);
             }
             $this->ExpireOTP($getOTP->id);
-            $user = DB::table('users as a')->leftJoin('roles as b', 'a.role_id', 'b.id')->select('a.*', 'b.title as role_type')->where('a.' . $request->type . '', $request->field_value)->first();
+            $user = DB::table('users as a')->leftJoin('roles as b', 'a.role_id', 'b.id')->select('a.*', 'b.title as role_type')->where('a.' . $request->type . '', $request->field_value)->where('a.role_id',$request->role_id)->first();
             DB::table('users')
                 ->where('id', $user->id)
                 ->update(['fcm_token' => $request->fcm_token]);
@@ -447,6 +448,7 @@ class AuthController extends Controller
     }
     public function update_profile(Request $request)
     {
+
          $formattedAddress = "";
         if (!empty($request->lat) && !empty($request->long)) {
             $apiKey = env('GOOGLE_MAPS_API');
@@ -480,7 +482,10 @@ class AuthController extends Controller
         // }
 
         $user = User::findOrFail($request->user->id);
+        if($formattedAddress){
+
         $user->current_address =  $formattedAddress;
+        }
         if ($request->hasFile('vehicle_image')) {
             foreach ($request->file('vehicle_image') as $image) {
                 $filePath = $image->store('vehicle_image', 'public');
@@ -500,11 +505,11 @@ class AuthController extends Controller
             'permanent_address', 'vehicle_type', 'vehicle_capicity',
             'registration_number', 'service_expiry_date', 'dl_number',
             'dl_front_image', 'dl_back_image', 'rc_number', 'rc_front_image',
-            'rc_back_image', 'ins_number', 'ins_image', 'police_verification' , 'bank_name' ,'ifsc_code','account_number','aadhar_front_image','aadhar_back_image','pan_front_image','pan_back_image','ride_state','ride_vehicle_type','dob','dl_validity','car_id','lat','long'
+            'rc_back_image', 'ins_number', 'police_verification' , 'bank_name' ,'ifsc_code','account_number','aadhar_front_image','aadhar_back_image','pan_front_image','pan_back_image','ride_state','ride_vehicle_type','dob','dl_validity','car_id','lat','long','district','ins_end_date','ins_image','is_duty','pollution_in_date','pollution_image','cab_com_permit','cab_com_permit_date'
         ];
         $fileFields = [
             'image','dl_front_image', 'dl_back_image', 'rc_front_image',
-            'rc_back_image', 'ins_image', 'police_verification','aadhar_front_image','aadhar_back_image','pan_front_image','pan_back_image'
+            'rc_back_image', 'police_verification','aadhar_front_image','aadhar_back_image','pan_front_image','pan_back_image','ins_image','cab_com_permit','pollution_image'
         ];
         foreach ($fields as $field) {
             if ($fileFields && $request->hasFile($field)) {

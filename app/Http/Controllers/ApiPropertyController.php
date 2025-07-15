@@ -56,14 +56,16 @@ public function vehicle_captain(Request $request){
     ], 200);
 }
 
-public function delete_user(Request $request){
-    $get_user = $request->user->id;
-    DB::table('users')->where('id',$get_user)->delete();
-    return response()->json([
-        'status'=> 'OK',
-        'messaage'=> 'User Deleted Successfully !'
-    ]);
-}
+    public function delete_user(Request $request){
+        $get_user = $request->user->id;
+          $get_user1 = DB::table('users')->where('id',$get_user)->first();
+            DB::table('tbl_logs')->insert(['data'=>json_encode($get_user1),'subject'=>'Deleted Captain','user_id'=>$get_user1->id,'status'=>1]);
+        DB::table('users')->where('id',$get_user)->delete();
+        return response()->json([
+            'status'=> 'OK',
+            'messaage'=> 'User Deleted Successfully !'
+        ]);
+    }
 
 
     public function create(Request $request)

@@ -18,6 +18,7 @@ use App\Http\Controllers\BedController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\DistrictController;
 use App\Http\Controllers\GallaryController;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\PropertyController;
@@ -58,6 +59,13 @@ Route::middleware(['auth', 'checkRole'])->group(function () {
     Route::post('/store-state', [StateController::class, 'store_state'])->name('store.state');
     Route::get('/edit-state/{id}', [StateController::class, 'edit_state'])->name('edit.state');
     Route::delete('/destroy-state/{id}', [StateController::class, 'destroy_state'])->name('destroy.state');
+
+
+        // District Routes
+    Route::get('/district', [DistrictController::class, 'index'])->name('district');
+    Route::post('/store-district', [DistrictController::class, 'store_district'])->name('store.district');
+    Route::get('/edit-district/{id}', [DistrictController::class, 'edit_district'])->name('edit.district');
+    Route::delete('/destroy-district/{id}', [DistrictController::class, 'destroy_district'])->name('destroy.district');
 
     // City Routes
     Route::get('/city', [CityController::class, 'index'])->name('city');

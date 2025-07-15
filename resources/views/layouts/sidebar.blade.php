@@ -71,6 +71,11 @@
                             <div class="menu-text">State List</div>
                         </a>
                     </div>
+                    <div class="menu-item">
+                        <a href="{{ route('district') }}" class="menu-link">
+                            <div class="menu-text">District List</div>
+                        </a>
+                    </div>
                     {{-- <div class="menu-item">
                         <a href="{{ route('city') }}" class="menu-link">
                             <div class="menu-text">City List</div>

@@ -111,7 +111,7 @@ class CompanyController extends Controller
         $bookings = [];
         foreach ($get_booking as $booking){
             $booking->post_user = User::where('id', $booking->user_id)->first();
-            $booking->accept_user = User::where('id', $booking->accept_user_id)->first();
+            $booking->accept_user = User::where('id', $booking->captain_id)->first();
             $booking->post_user_statement = DB::table('tbl_statement')->where('booking_id',$booking->id)->where('user_id',$booking->user_id)->get();
             $booking->accept_user_statement = DB::table('tbl_statement')->where('booking_id',$booking->id)->where('user_id',$booking->accept_user_id)->get();
             $booking->admin_user_statement = DB::table('tbl_statement')->where('booking_id',$booking->id)->where('user_id',1)->get();

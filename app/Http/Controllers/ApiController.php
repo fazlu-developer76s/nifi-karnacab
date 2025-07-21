@@ -522,6 +522,7 @@ class ApiController extends Controller
                 // ->where('ride_vehicle_type', $vehicle_type)
                 ->where('car_id', $row->id)
                 ->where('role_id', 2)
+                ->where('is_booking_active',2)
                 ->having('distance', '<=', $radius)
                 ->orderBy('distance', 'asc')
                 ->get();
@@ -671,7 +672,7 @@ class ApiController extends Controller
     {
         // Fetch booking with status 2 or 3
         $booking = DB::table('tbl_booking')
-            ->select('id', 'vehicle_title', 'vehicle_image', 'user_id', 'captain_id', 'current_address as pick_up_location', 'booking_status', 'otp', 'calculated_fare')
+            ->select('id', 'vehicle_title', 'vehicle_image', 'user_id', 'captain_id', 'current_address as pick_up_location', 'booking_status', 'otp', 'calculated_fare','current_lat','current_lng')
             ->whereIn('booking_status', [2,3,4,5]);
             
         if($request->user->role_id == 2 ){
@@ -694,7 +695,7 @@ class ApiController extends Controller
         if ($request->user->role_id == 2) {
             // Role: Captain
             $user = DB::table('users')->where('id', $get_booking->user_id)->select('name', 'mobile_no', 'image')->first();
-            $captain = DB::table('users')->where('id', $get_booking->captain_id)->select('current_address')->first();
+            $captain = DB::table('users')->where('id', $get_booking->captain_id)->select('current_address','vehicle_number')->first();
 
             $get_booking->user_info = $user;
             $get_booking->captain_info = $captain;
@@ -704,7 +705,7 @@ class ApiController extends Controller
         } else {
             // Role: User
 
-            $captain = DB::table('users')->where('id', $get_booking->captain_id)->select('name', 'mobile_no', 'image', 'current_address')->first();
+            $captain = DB::table('users')->where('id', $get_booking->captain_id)->select('name', 'mobile_no', 'image', 'current_address','vehicle_number')->first();
             $get_booking->captain_info = $captain;
             $originAddress = $captain->current_address ?? null;
             $destinationAddress = $get_booking->pick_up_location ?? null;
@@ -835,7 +836,7 @@ class ApiController extends Controller
             Global_helper::SaveNotification($id,$get_user->id,'Booking Activated','Your booking has been activated by ' . $get_captain->name);
             Global_helper::SaveNotification($id,$get_captain->id,'Booking Activated','You have activated the booking of ' . $get_user->name);
             $this->sendNotificationToUser($get_user->fcm_token,'Booking Activated','Your booking has been activated by ' . $get_captain->name);
-
+            $captain_active = DB::table('users')->where('id',$request->user->id)->update(['is_booking_active'=>1]);
             return response()->json(['status' => 'OK', 'message' => 'Booking activated successfully'], 200);
         } else {
             return response()->json(['status' => 'Error', 'message' => 'Booking not found'], 404);
@@ -931,7 +932,7 @@ class ApiController extends Controller
             Global_helper::SaveNotification($id,$get_captain->id,'Booking Completed','You have completed the booking of ' . $get_user->name);
             $this->sendNotificationToUser($get_user->fcm_token,'Booking Completed','Your booking has been completed by ' . $get_captain->name);
             DB::table('tbl_booking')->where('id',$get_captain->id)->update(['current_address'=>$get_booking->drop_address]);
-
+            $captain_active = DB::table('users')->where('id',$get_captain->id)->update(['is_booking_active'=>2]);
 
             return response()->json(['status' => 'OK', 'message' => 'Booking Completed successfully'], 200);
         }
@@ -1012,6 +1013,24 @@ class ApiController extends Controller
         // DB::table('tbl_statement')->insert(['user_id' => $get_booking->user_id, 'transaction_type' => 4, 'payment_type' => 1, 'amount' => $post_user_commision , 'payment_status' => 1]);
         // DB::table('users')->where('id', $get_booking->user_id)->update(['wallet_amount' => $final_post_user_commision,'updated_at' => date('Y-m-d H:i:s')]);
         return response()->json(['status' => 'OK', 'message' => 'Booking status updated successfully'], 200);
+    }
+    
+    
+    public function cancel_booking_for_driver(Request $request , $id){
+        
+  
+            $get_booking = Booking::where('id', $id)->first();
+            // if ($get_booking->booking_status != 1) {
+            //     return response()->json(['status' => 'Error', 'message' => 'Booking status is not accepted'], 401);
+            // }
+            // DB::table('tbl_booking')->where('id', $id)->update(['booking_status' => 5, 'captain_id' => $request->user->id]);
+            DB::table('tbl_booking_log')->where('captain_id', $request->user->id)->where('booking_id', $id)->update(['status' => 2]);
+          
+
+
+            return response()->json(['status' => 'OK', 'message' => 'Booking Cancel successfully'], 200);
+        
+        
     }
 
 
@@ -1621,6 +1640,7 @@ class ApiController extends Controller
         $user_id = $request->user->id;
         $review = new PropertyReview();
         $review->user_id = $user_id;
+        $review->booking_id = $request->booking_id;
         $review->review = $request->review;
         $review->rating = $request->rating;
         $review->save();

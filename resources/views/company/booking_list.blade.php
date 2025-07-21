@@ -238,9 +238,9 @@
                                          <td>{{ $book->current_address }}</td>
                                         <td>{{ $book->drop_address }}</td>
                                         <td>{{ ucwords($book->trip_distance_text) }}</td>
-                                        <td>{{ $book->rate_per_km }} ₹</td>
-                                        <td>{{ $book->vehicle_extra_charges }} ₹</td>
-                                        <td>{{ $book->calculated_fare }} ₹</td>
+                                        <td>{{ $book->rate_per_km }}₹</td>
+                                        <td>{{ $book->vehicle_extra_charges }}₹</td>
+                                        <td>{{ $book->calculated_fare }}₹</td>
                                         <td>{{ $booking_status }}</td>
                                         <td>{{ \Carbon\Carbon::parse(@$booking_status->created_at)->format('d F Y h:i A') ?? 'N/A' }}
                                         <td>

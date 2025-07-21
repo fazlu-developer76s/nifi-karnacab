@@ -111,6 +111,16 @@
                                                     <td>{{ @$get_user[0]->mobile_no ?? 'N/A' }}</td>
                                                 </tr>
                                                 <tr>
+                                                    <td><strong>User Image:</strong></td>
+                                                    <td>
+                                                        @if (@$get_user[0]->image)
+                                                            <img src="{{ asset('storage/' . @$get_user[0]->image) }}" alt="Aadhar Front Image" style="max-width: 100px; max-height: 100px;">
+                                                        @else
+                                                            N/A
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                                <tr>
                                                     <td><strong>Gender:</strong></td>
                                                     <td>{{ @$get_user[0]->gender ?? 'N/A' }}</td>
                                                 </tr>
@@ -120,11 +130,15 @@
                                                 </tr>
                                                 <tr>
                                                     <td><strong>State:</strong></td>
-                                                    <td>{{ @$get_user[0]->ride_state ?? 'N/A' }}</td>
+                                                    <td>{{ @$get_user[0]->state_name ?? 'N/A' }}</td>
+                                                </tr>
+                                                                                                <tr>
+                                                    <td><strong>District:</strong></td>
+                                                    <td>{{ @$get_user[0]->district_name ?? 'N/A' }}</td>
                                                 </tr>
                                                 <tr>
                                                     <td><strong>Vehicle Type:</strong></td>
-                                                    <td>{{ @$get_user[0]->ride_vehicle_type ?? 'N/A' }}</td>
+                                                    <td>{{ @$get_user[0]->car_name ?? 'N/A' }}</td>
                                                 </tr>
                                                 <tr>
                                                     <td><strong>Aadhar No:</strong></td>
@@ -255,6 +269,52 @@
                                                         @endif
                                                     </td>
                                                 </tr>
+                                                
+                                                 <tr>
+                                                    <td><strong>Insurance End Date:</strong></td>
+                                                    <td>{{ @$get_user[0]->ins_end_date ?? 'N/A' }}</td>
+                                                </tr>
+                                                 <tr>
+                                                    <td><strong>Insurance Image:</strong></td>
+                                                    <td>
+                                                        @if (@$get_user[0]->ins_image)
+                                                            <img src="{{ asset('storage/' . @$get_user[0]->ins_image) }}" alt="RC Back Image" style="max-width: 100px; max-height: 100px;">
+                                                        @else
+                                                            N/A
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                                
+                                                <tr>
+                                                    <td><strong>Pollution End Date:</strong></td>
+                                                    <td>{{ @$get_user[0]->pollution_in_date ?? 'N/A' }}</td>
+                                                </tr>
+                                                 <tr>
+                                                    <td><strong>Pollution Image:</strong></td>
+                                                    <td>
+                                                        @if (@$get_user[0]->pollution_image)
+                                                            <img src="{{ asset('storage/' . @$get_user[0]->pollution_image) }}" alt="RC Back Image" style="max-width: 100px; max-height: 100px;">
+                                                        @else
+                                                            N/A
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                                
+                                                <tr>
+                                                    <td><strong>Commercial Permit End Date:</strong></td>
+                                                    <td>{{ @$get_user[0]->cab_com_permit_date ?? 'N/A' }}</td>
+                                                </tr>
+                                                 <tr>
+                                                    <td><strong>Commercial Permit Image:</strong></td>
+                                                    <td>
+                                                        @if (@$get_user[0]->cab_com_permit)
+                                                            <img src="{{ asset('storage/' . @$get_user[0]->cab_com_permit) }}" alt="RC Back Image" style="max-width: 100px; max-height: 100px;">
+                                                        @else
+                                                            N/A
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                                
                                                 <tr>
                                                     <td><strong>User Status:</strong></td>
                                                     <td>

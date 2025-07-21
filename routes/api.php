@@ -40,13 +40,14 @@ Route::middleware(['jwt'])->group(function () {
     Route::post('user/get-suggestion', [ApiController::class, 'get_suggestion']);
     Route::get('user/fetch-booking', [ApiController::class, 'fetch_booking']);
     Route::get('user/fetch-notification', [ApiController::class, 'fetch_notification']);
-    Route::get('user/fetch-booking-user/{id}', [ApiController::class, 'fetch_booking_user']);
-    Route::get('user/fetch-booking-user', [ApiController::class, 'fetch_booking_user_single']);
+    Route::get('user/fetch-booking-user/{id}', [ApiController::class, 'fetch_booking_user'])->middleware('throttle:300,1');
+    Route::get('user/fetch-booking-user', [ApiController::class, 'fetch_booking_user_single'])->middleware('throttle:300,1');
     Route::get('user/activate-booking-get', [ApiController::class, 'activate_booking_get']);
     Route::post('user/activate-booking/{id}', [ApiController::class, 'activate_booking']);
     Route::post('user/update-booking-status/{id}', [ApiController::class, 'update_booking_status']);
     Route::get('user/accept-booking/{id}', [ApiController::class, 'accept_booking']);
     Route::get('user/cancel-booking/{id}', [ApiController::class, 'cancel_booking']);
+    Route::post('user/cancel-booking-for-driver/{id}', [ApiController::class, 'cancel_booking_for_driver']);
     Route::get('user/complete-booking/{id}', [ApiController::class, 'complete_booking']);
     Route::get('user/fetch-my-booking/{id}', [ApiController::class, 'fetch_my_booking']);
     Route::get('user/wallet-statement', [ApiController::class, 'wallet_statement']);

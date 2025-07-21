@@ -37,7 +37,7 @@
                                     <tr>
                                         <th width="1%"></th>
                                         <th class="text-nowrap">Name </th>
-                                        <th class="text-nowrap">Email</th>
+                                        <!--<th class="text-nowrap">Email</th>-->
                                         <th class="text-nowrap">Mobile No.</th>
                                         <th class="text-nowrap">Role</th>
                                         <th class="text-nowrap">Created Date</th>
@@ -54,7 +54,7 @@
                                     <tr class="odd gradeX">
                                         <td width="1%" class="fw-bold text-dark">{{ $loop->iteration }}</td>
                                         <td>{{ $member->name }}</td>
-                                        <td>{{ $member->email }}</td>
+                                        <!--<td>{{ $member->email }}</td>-->
                                         <td>{{ $member->mobile_no }}</td>
                                         <td>{{ $member->title }}</td>
                                         <td>{{ \Carbon\Carbon::parse($member->created_at)->format('d F Y h:i A') }}</td>

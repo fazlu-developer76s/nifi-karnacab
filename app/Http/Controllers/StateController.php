@@ -73,7 +73,7 @@ class StateController extends Controller
     public function check_exist_data($title, $id)
     {
         if ($id != null && $title != null) {
-            $check_state = State::where('title', $title)->where('status', '!=', 3)->first();
+            $check_state = State::where('title', $title)->where('status', '!=', 3)->where('id','!=',$id)->first();
             if ($check_state) {
                 return true;
             }

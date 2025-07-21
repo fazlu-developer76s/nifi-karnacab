@@ -63,15 +63,15 @@
                                             @enderror
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Email</label>
-                                            <input class="form-control @error('email') is-invalid @enderror" type="email" name="email" placeholder="Enter Email" value=" @if(empty($get_member)) {{ old('email') }} @else {{ (isset($get_member)) ? $get_member->email : '' ; }} @endif" />
-                                            @error('email')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
+                                    <!--<div class="col-md-6">-->
+                                    <!--    <div class="mb-3">-->
+                                    <!--        <label class="form-label">Email</label>-->
+                                    <!--        <input class="form-control @error('email') is-invalid @enderror" type="email" name="email" placeholder="Enter Email" value=" @if(empty($get_member)) {{ old('email') }} @else {{ (isset($get_member)) ? $get_member->email : '' ; }} @endif" />-->
+                                    <!--        @error('email')-->
+                                    <!--        <div class="invalid-feedback">{{ $message }}</div>-->
+                                    <!--        @enderror-->
+                                    <!--    </div>-->
+                                    <!--</div>-->
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Mobile No.</label>

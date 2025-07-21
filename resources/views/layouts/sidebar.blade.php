@@ -285,6 +285,11 @@
                         </a>
                     </div>
                     <div class="menu-item">
+                        <a href="{{ route('pages.edit', 7) }}" class="menu-link ">
+                            <div class="menu-text">Contact Us</div>
+                        </a>
+                    </div>
+                    <div class="menu-item">
                         <a href="{{ route('pages.edit', 2) }}" class="menu-link ">
                             <div class="menu-text">Privacy Policy</div>
                         </a>

@@ -38,7 +38,8 @@ class DistrictController extends Controller
             $district = District::findOrFail($request->hidden_id);
             $request->validate([
                 'title' => 'required',
-                'status' => 'required'
+                'status' => 'required',
+                'state_id' => 'required',
             ]);
 
             $district->title = $request->title;
@@ -54,6 +55,7 @@ class DistrictController extends Controller
         $request->validate([
             'status' => 'required',
             'title' => 'required',
+            'state_id' => 'required',
         ]);
         $district = new District();
         $district->title = $request->title;
@@ -91,7 +93,7 @@ class DistrictController extends Controller
     public function check_exist_data($title, $id)
     {
         if ($id != null && $title != null) {
-            $check_district = District::where('title', $title)->where('status', '!=', 3)->first();
+            $check_district = District::where('title', $title)->where('status', '!=', 3)->where('id','!=',$id)->first();
             if ($check_district) {
                 return true;
             }

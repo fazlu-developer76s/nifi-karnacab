@@ -97,11 +97,11 @@ class MemberController extends Controller
                 'name' => 'required|string|max:255',
                 'role_id' => 'required',
                 // 'gst_no' => 'required',
-                'email' => [
-                    'required',
-                    'email',
-                    'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'
-                ],
+                // 'email' => [
+                //     'required',
+                //     'email',
+                //     'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'
+                // ],
                 'mobile_no' => [
                     'required',
                     'regex:/^[6-9]\d{9}$/'
@@ -153,15 +153,19 @@ class MemberController extends Controller
         } else {
             $get_role = Roles::where('status', 1)->where('id', '!=', 2)->where('id', '!=', 1)->get();
         }
-        return view('member.create', compact('title', 'get_member', 'get_role',));
+        return view('member.create', compact('title', 'get_member', 'get_role'));
     }
 
     public function view($id)
     {
+     
         $title = "Edit Member";
         $get_user = DB::table('users as a')
             ->leftJoin('tbl_vehicle_image as b', 'a.id', '=', 'b.user_id')
-            ->select('a.*', 'b.image as sub_image', 'b.type as image_type')
+            ->leftJoin('tbl_vehicle as c','c.id','=','a.car_id')
+            ->leftJoin('tbl_state as d','d.id','=','a.ride_state')
+            ->leftJoin('tbl_district as e','e.id','=','a.district')
+            ->select('a.*', 'b.image as sub_image', 'b.type as image_type','c.title as car_name','d.title as state_name','e.title as district_name')
             ->where('a.id', $id)
             ->where('a.status', '!=', 3)
             ->get();
@@ -175,11 +179,11 @@ class MemberController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'role_id' => 'required',
-            'email' => [
-                'required',
-                'email',
-                'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'
-            ],
+            // 'email' => [
+            //     'required',
+            //     'email',
+            //     'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'
+            // ],
             'mobile_no' => [
                 'required',
                 'regex:/^[6-9]\d{9}$/'

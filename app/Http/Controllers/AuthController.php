@@ -29,7 +29,7 @@ class AuthController extends Controller
                 'regex:/^[6-9][0-9]{9}$/',
             ]
         ]);
-
+    
         $get_user = User::where('status',1)->where('mobile_no',$request->mobile_no)->where('role_id',$request->role_id)->first();
         if($get_user && $request->type == "register"){
             return response()->json([
@@ -43,51 +43,53 @@ class AuthController extends Controller
                 'message' => "User not found",
             ], 404);
         }
-
+        
         $otp = 123456;
         $mobile_no  = $request->mobile_no;
         $type  = $request->type;
-        // if ($mobile_no != "7428059960" && $mobile_no != "8287976642") {
-        //     $entity_id = 1701159540601889654;
-        //     $senderId  = "NRSOFT";
-        //     $temp_id   = "1707164805234023036";
-        //     $userid = "NERASOFT1";
-        //     $otp = rand(100000, 999999);
-        //     $request = "Login Request";
-        //     $password = 111321;
-        //     $temp = "Dear User Your OTP For Login in sixcash is $otp Valid For 10 Minutes. we request you to don't share with anyone .Thanks NSAFPL";
-        //     $url = 'http://sms.nerasoft.in/api/SmsApi/SendSingleApi?' . http_build_query([
-        //         'UserID'    => $userid,
-        //         'Password'  => $password,
-        //         'SenderID'  => $senderId,
-        //         'Phno'      => $mobile_no,
-        //         'Msg'       => $temp,
-        //         'EntityID'  => $entity_id,
-        //         'TemplateID' => $temp_id
-        //     ]);
-        //     $ch = curl_init();
-        //     curl_setopt($ch, CURLOPT_URL, $url);
-        //     curl_setopt($ch, CURLOPT_POST, 1);
-        //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        //     $headers = [
-        //         'Content-Type: application/json',
-        //         'Content-Length: 0'
-        //     ];
-        //     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        //     $response = curl_exec($ch);
-        //     if ($response === false) {
-        //         $error = curl_error($ch);
-        //         curl_close($ch);
-        //         return "Error: $error";
-        //     }
-        //     curl_close($ch);
-        // }
+        if ($mobile_no != "7428059960" && $mobile_no != "8700682075") {
+            $entity_id = 1701159540601889654;
+            $senderId  = "NRSOFT";
+            $temp_id   = "1707164805234023036";
+            $userid = "NERASOFT1";
+            $otp = rand(100000, 999999);
+            $request = "Login Request";
+            $password = "Nifi@2025$";
+            // $temp = "Dear User Your OTP For Login in karnacab is $otp Valid For 10 Minutes. we request you to don't share with anyone .Thanks NSAFPL";
+            $temp = "Dear User Your OTP For Login in KarnaCab is $otp Valid For 10 Minutes. we request you to don't share with anyone .Thanks NSAFPL";
+            $url = 'http://sms.nerasoft.in/api/SmsApi/SendSingleApi?' . http_build_query([
+                'UserID'    => $userid,
+                'Password'  => $password,
+                'SenderID'  => $senderId,
+                'Phno'      => $mobile_no,
+                'Msg'       => $temp,
+                'EntityID'  => $entity_id,
+                'TemplateID' => $temp_id
+            ]);
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            $headers = [
+                'Content-Type: application/json',
+                'Content-Length: 0'
+            ];
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            $response = curl_exec($ch);
+            if ($response === false) {
+                $error = curl_error($ch);
+                curl_close($ch);
+                return "Error: $error";
+            }
+            curl_close($ch);
+        }
         if ($type == "register") {
             $module_type = 2;
         } else {
             $module_type = 1;
         }
         $otp_type = 1;
+        DB::table('tbl_otp')->where('field_value',$mobile_no)->update(['status'=>2]);
         $this->GenerateOTP($otp, $module_type, $otp_type, $mobile_no);
         return response()->json([
             'status' => "OK",
@@ -205,10 +207,10 @@ class AuthController extends Controller
                 'required',
                 'regex:/^[6-9][0-9]{9}$/',
             ],
-            'email' => [
-                'required',
-                'email',
-            ],
+            // 'email' => [
+            //     'required',
+            //     'email',
+            // ],
             // 'gender' => [
             //     'required',
             //     'in:male,female,other',
@@ -231,8 +233,7 @@ class AuthController extends Controller
         // }
 
         $user = User::where(function ($query) use ($request) {
-            $query->where('mobile_no', $request->mobile_no)->where('role_id',$request->role_id)
-                ->orWhere('email', $request->email);
+            $query->where('mobile_no', $request->mobile_no)->where('role_id',$request->role_id);
         })->where('status', '!=', 3)->first();
         if ($user) {
             return response()->json([
@@ -242,7 +243,7 @@ class AuthController extends Controller
         }
         $user = new User();
         $user->name = $request->name;
-        $user->email = $request->email;
+        // $user->email = $request->email;
         $user->mobile_no = $request->mobile_no;
         $user->gender = $request->gender;
         $user->password = Hash::make($request->password);
@@ -448,7 +449,11 @@ class AuthController extends Controller
     }
     public function update_profile(Request $request)
     {
-
+   
+         $get_user = DB::table('users')->where('id',$request->user->id)->first();
+         if($get_user->mobile_no == "8700682075" || $get_user->mobile_no == "7428059960"){
+           return response()->json(['status' => 'OK', 'message' => 'Profile updated successfully'], 200);
+         }
          $formattedAddress = "";
         if (!empty($request->lat) && !empty($request->long)) {
             $apiKey = env('GOOGLE_MAPS_API');
@@ -483,7 +488,7 @@ class AuthController extends Controller
 
         $user = User::findOrFail($request->user->id);
         if($formattedAddress){
-
+            
         $user->current_address =  $formattedAddress;
         }
         if ($request->hasFile('vehicle_image')) {
@@ -505,7 +510,7 @@ class AuthController extends Controller
             'permanent_address', 'vehicle_type', 'vehicle_capicity',
             'registration_number', 'service_expiry_date', 'dl_number',
             'dl_front_image', 'dl_back_image', 'rc_number', 'rc_front_image',
-            'rc_back_image', 'ins_number', 'police_verification' , 'bank_name' ,'ifsc_code','account_number','aadhar_front_image','aadhar_back_image','pan_front_image','pan_back_image','ride_state','ride_vehicle_type','dob','dl_validity','car_id','lat','long','district','ins_end_date','ins_image','is_duty','pollution_in_date','pollution_image','cab_com_permit','cab_com_permit_date'
+            'rc_back_image', 'ins_number', 'police_verification' , 'bank_name' ,'ifsc_code','account_number','aadhar_front_image','aadhar_back_image','pan_front_image','pan_back_image','ride_state','ride_vehicle_type','dob','dl_validity','car_id','lat','long','district','ins_end_date','ins_image','is_duty','pollution_in_date','pollution_image','cab_com_permit','cab_com_permit_date','vehicle_number'
         ];
         $fileFields = [
             'image','dl_front_image', 'dl_back_image', 'rc_front_image',

@@ -77,6 +77,7 @@
                                                 <i class="fa fa-eye"></i>
                                             </a>
                                             @endif
+
                                             <a href="{{ route('member.edit', $member->id) }}" class="text-primary me-2">
                                                 <i class="fa fa-edit"></i>
                                             </a>

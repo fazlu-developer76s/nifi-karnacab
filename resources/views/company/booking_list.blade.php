@@ -190,7 +190,7 @@
                                     <tr>
                                         <th width="1%"></th>
                                         <th class="text-nowrap">Username</th>
-                                        @if(isset($book) && $book[0]->booking_status != 1)
+                                        @if(!empty($bookings) && isset($bookings[0]) && $bookings[0]->booking_status != 1)
                                         <th class="text-nowrap">Accept User</th>
                                         @endif
                                         <th class="text-nowrap">Vehicle</th>
@@ -218,9 +218,12 @@
                                         @php $booking_status = "Accept"; @endphp
                                     @break
                                     @case(3)
-                                        @php $booking_status = "Complete"; @endphp
+                                        @php $booking_status = "Active"; @endphp
                                     @break
                                     @case(4)
+                                        @php $booking_status = "Complete"; @endphp
+                                    @break
+                                    @case(5)
                                         @php $booking_status = "Cancel"; @endphp
                                     @break
                                     @default

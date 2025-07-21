@@ -93,128 +93,43 @@
                                         <tbody>
                                             <h4>Customer Information</h4>
                                             <tr>
-                                                <td><strong>Full Name:</strong></td>
-                                                <td>{{ $data[0]->name ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Email:</strong></td>
-                                                <td>{{ $data[0]->email_id ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Mobile No:</strong></td>
-                                                <td>{{ $data[0]->mobile_no ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Number Of People:</strong></td>
-                                                <td>{{ $data[0]->num_of_people ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Number Of Ladies:</strong></td>
-                                                <td>{{ $data[0]->num_of_lady ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Number Of Men:</strong></td>
-                                                <td>{{ $data[0]->num_of_men ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Number Of Children:</strong></td>
-                                                <td>{{ $data[0]->num_of_child ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Pick Up Date:</strong></td>
-                                                <td>{{ $data[0]->pick_up_date ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Pick Up Time:</strong></td>
-                                                <td>{{ $data[0]->pick_up_time ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Pick Up Location:</strong></td>
-                                                <td>{{ $data[0]->pick_up_location ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Country:</strong></td>
-                                                <td>{{ $data[0]->country ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>State:</strong></td>
-                                                <td>{{ $data[0]->state ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>City:</strong></td>
-                                                <td>{{ $data[0]->city ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Address:</strong></td>
-                                                <td>{{ $data[0]->address ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Pincode:</strong></td>
-                                                <td>{{ $data[0]->pincode ?? 'N/A' }}</td>
+                                                <td><strong>Pickup Location:</strong></td>
+                                                <td>{{ $data[0]->current_address ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
                                                 <td><strong>Drop Location:</strong></td>
-                                                <td>{{ $data[0]->drop_us_location ?? 'N/A' }}</td>
+                                                <td>{{ $data[0]->drop_address ?? 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Distance:</strong></td>
+                                                <td>{{ $data[0]->trip_distance_text ?? 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Distance Duration:</strong></td>
+                                                <td>{{ $data[0]->trip_duration_text ?? 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Km Price:</strong></td>
+                                                <td>{{ $data[0]->rate_per_km ?? 'N/A' }} ₹</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Km Extra Charges:</strong></td>
+                                                <td>{{ $data[0]->vehicle_extra_charges ?? 'N/A' }} ₹</td>
                                             </tr>
                                             <tr>
                                                 <td><strong>Booking Amount:</strong></td>
-                                                <td>{{ $data[0]->booking_amount ?? 'N/A' }}</td>
+                                                <td>{{ floatval(preg_replace('/[^0-9.]/', '', $data[0]->trip_distance_text)) * $data[0]->rate_per_km }} ₹</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Note:</strong></td>
-                                                <td>{{ $data[0]->note ?? 'N/A' }}</td>
+                                                <td><strong>Booking Commission:</strong></td>
+                                                <td>{{ floatval(preg_replace('/[^0-9.]/', '', $data[0]->trip_distance_text)) * $data[0]->vehicle_extra_charges }} ₹</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Seater:</strong></td>
-                                                <td>{{ $data[0]->seater ?? 'N/A' }}</td>
+                                                <td><strong>Total Amount:</strong></td>
+                                                <td>{{ $data[0]->calculated_fare ?? 'N/A' }} ₹</td>
                                             </tr>
-                                            <tr>
-                                                <td><strong>Booking Percentage:</strong></td>
-                                                <td>{{ $data[0]->booking_percentage ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Booking Tax:</strong></td>
-                                                <td>{{ $data[0]->booking_tax ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Booking Post Percentage:</strong></td>
-                                                <td>{{ $data[0]->booking_post_percentage ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Booking Post TDS:</strong></td>
-                                                <td>{{ $data[0]->booking_post_tds ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Created At:</strong></td>
-                                                <td>{{ \Carbon\Carbon::parse($data[0]->created_at)->format('Y-m-d H:i:s') ?? 'N/A' }}</td>
-                                            </tr>
-
-                                        </tbody>
-
-                                    </table>
-                                </div>
-                                <div class="col-md-6">
-                                    <table class="table table-bordered">
-                                        <tbody>
-                                            <tr>
-                                                <h4>Vehicle Information</h4>
-                                                <td><strong>Vehicle Type:</strong></td>
-                                                <td>{{ $data[0]->accept_user_vehicle_type ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Registration Number:</strong></td>
-                                                <td>{{ $data[0]->accept_user_registration_number ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Pick-Up Location:</strong></td>
-                                                <td>{{ $data[0]->pick_up_location ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Drop-Off Location:</strong></td>
-                                                <td>{{ $data[0]->drop_us_location ?? 'N/A' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Status:</strong></td>
+                                           <tr>
+                                                <td><strong>Booking Status:</strong></td>
                                                 <td>
                                                     @switch($data[0]->booking_status)
                                                         @case(1)
@@ -226,10 +141,13 @@
                                                         @break
 
                                                         @case(3)
-                                                            Complete
+                                                            Active
                                                         @break
 
                                                         @case(4)
+                                                            Complete
+                                                        @break
+                                                        @case(5)
                                                             Cancel
                                                         @break
 
@@ -238,8 +156,44 @@
                                                     @endswitch
                                                 </td>
                                             </tr>
+                                            <tr>
+                                                <td><strong>Created At:</strong></td>
+                                                <td>{{ \Carbon\Carbon::parse($data[0]->created_at)->format('Y-m-d H:i:s') ?? 'N/A' }}</td>
+                                            </tr>
+
+                                        </tbody>
+
+                                    </table>
+                                     <table class="table table-bordered">
+                                        <tbody>
+                                            <tr>
+                                                <h4>Vehicle Information</h4>
+                                                <td><strong>Vehicle Type:</strong></td>
+                                                <td>{{ $data[0]->vehicle_title ?? 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Vehicle Number:</strong></td>
+                                                <td>{{ $data[0]->vehicle_number ?? 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Vehicle Seater:</strong></td>
+                                                <td>{{ $data[0]->vehicle_seater ?? 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Vehicle Image:</strong></td>
+                                                <td>
+                                                    @if ($data[0]->vehicle_image)
+                                                        <img src="{{ asset('storage/' . $data[0]->vehicle_image) }}" alt="Vehicle Image" style="width: 100px; height: 100px;">
+                                                    @else
+                                                        N/A
+                                                    @endif
+                                                </td>
+                                            </tr>
                                         </tbody>
                                     </table>
+                                </div>
+                                <div class="col-md-6">
+
                                     <table class="table table-bordered">
                                         <tbody>
                                             <tr>
@@ -280,6 +234,27 @@
                                                 <td><strong>View All Info:</strong></td>
                                                 <td><a href="{{ route('member.view', ['id' => $data[0]->accept_user->id ?? 'N/A']) }}" target="_blank">Click here</a></td>
                                             </tr>
+                                        </tbody>
+                                    </table>
+                                     <table class="table table-bordered">
+                                        <tbody>
+                                        <tr>
+                                            <h4>Booking Review</h4>
+                                            <td><strong>Star:</strong></td>
+                                            <td>
+                                                @php
+                                                    $rating = $data[0]->review->rating ?? 0;
+                                                    $stars = str_repeat('★', $rating);
+                                                @endphp
+                                                {{ $stars }} ({{ $rating > 0 ? $rating : 'N/A' }})
+                                            </td>
+                                        </tr>
+
+                                            <tr>
+                                                <td><strong>Review:</strong></td>
+                                                <td>{{ $data[0]->review->review ?? 'N/A' }}</td>
+                                            </tr>
+
                                         </tbody>
                                     </table>
                                 </div>

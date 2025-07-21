@@ -115,6 +115,8 @@
                                                     <td>
                                                         @if (@$get_user[0]->image)
                                                             <img src="{{ asset('storage/' . @$get_user[0]->image) }}" alt="Aadhar Front Image" style="max-width: 100px; max-height: 100px;">
+                                                            <br>
+                                                            <a href="{{ asset('storage/' . @$get_user[0]->image) }}" target="_blank"><b>Click here</b></a>
                                                         @else
                                                             N/A
                                                         @endif
@@ -141,6 +143,10 @@
                                                     <td>{{ @$get_user[0]->car_name ?? 'N/A' }}</td>
                                                 </tr>
                                                 <tr>
+                                                    <td><strong>Vehicle Number:</strong></td>
+                                                    <td>{{ @$get_user[0]->vehicle_number ?? 'N/A' }}</td>
+                                                </tr>
+                                                <tr>
                                                     <td><strong>Aadhar No:</strong></td>
                                                     <td>{{ @$get_user[0]->aadhar_no ?? 'N/A' }}</td>
                                                 </tr>
@@ -149,6 +155,8 @@
                                                     <td>
                                                         @if (@$get_user[0]->aadhar_front_image)
                                                             <img src="{{ asset('storage/' . @$get_user[0]->aadhar_front_image) }}" alt="Aadhar Front Image" style="max-width: 100px; max-height: 100px;">
+                                                            <br>
+                                                            <a href="{{ asset('storage/' . @$get_user[0]->aadhar_front_image) }}" target="_blank"><b>Click here</b></a>
                                                         @else
                                                             N/A
                                                         @endif
@@ -159,6 +167,8 @@
                                                     <td>
                                                         @if (@$get_user[0]->aadhar_back_image)
                                                             <img src="{{ asset('storage/' . @$get_user[0]->aadhar_back_image) }}" alt="Aadhar Back Image" style="max-width: 100px; max-height: 100px;">
+                                                            <br>
+                                                            <a href="{{ asset('storage/' . @$get_user[0]->aadhar_back_image) }}" target="_blank"><b>Click here</b></a>
                                                         @else
                                                             N/A
                                                         @endif
@@ -173,6 +183,8 @@
                                                     <td>
                                                         @if (@$get_user[0]->pan_front_image)
                                                             <img src="{{ asset('storage/' . @$get_user[0]->pan_front_image) }}" alt="PAN Front Image" style="max-width: 100px; max-height: 100px;">
+                                                            <br>
+                                                           <a href="{{ asset('storage/' . @$get_user[0]->pan_front_image) }}" target="_blank"><b>Click here</b></a>
                                                         @else
                                                             N/A
                                                         @endif
@@ -182,7 +194,9 @@
                                                     <td><strong>PAN Back Image:</strong></td>
                                                     <td>
                                                         @if (@$get_user[0]->pan_back_image)
-                                                            <img src="{{ asset('storage/' . @$get_user[0]->pan_back_image) }}" alt="PAN Back Image" style="max-width: 100px; max-height: 100px;">
+                                                        <img src="{{ asset('storage/' . @$get_user[0]->pan_back_image) }}" alt="PAN Back Image" style="max-width: 100px; max-height: 100px;">
+                                                        <br>
+                                                       <a href="{{ asset('storage/' . @$get_user[0]->pan_back_image) }}" target="_blank"><b>Click here</b></a>
                                                         @else
                                                             N/A
                                                         @endif
@@ -202,6 +216,8 @@
                                                     <td>
                                                         @if (@$get_user[0]->dl_front_image)
                                                             <img src="{{ asset('storage/' . @$get_user[0]->dl_front_image) }}" alt="DL Front Image" style="max-width: 100px; max-height: 100px;">
+                                                            <br>
+                                                            <a href="{{ asset('storage/' . @$get_user[0]->dl_front_image) }}" target="_blank"><b>Click here</b></a>
                                                         @else
                                                             N/A
                                                         @endif
@@ -212,6 +228,8 @@
                                                     <td>
                                                         @if (@$get_user[0]->dl_back_image)
                                                             <img src="{{ asset('storage/' . @$get_user[0]->dl_back_image) }}" alt="DL Back Image" style="max-width: 100px; max-height: 100px;">
+                                                            <br>
+                                                            <a href="{{ asset('storage/' . @$get_user[0]->dl_back_image) }}" target="_blank"><b>Click here</b></a>
                                                         @else
                                                             N/A
                                                         @endif
@@ -226,6 +244,8 @@
                                                     <td>
                                                         @if (@$get_user[0]->rc_front_image)
                                                             <img src="{{ asset('storage/' . @$get_user[0]->rc_front_image) }}" alt="RC Front Image" style="max-width: 100px; max-height: 100px;">
+                                                            <br>
+                                                           <a href="{{ asset('storage/' . @$get_user[0]->rc_front_image) }}" target="_blank"><b>Click here</b></a>
                                                         @else
                                                             N/A
                                                         @endif
@@ -236,6 +256,8 @@
                                                     <td>
                                                         @if (@$get_user[0]->rc_back_image)
                                                             <img src="{{ asset('storage/' . @$get_user[0]->rc_back_image) }}" alt="RC Back Image" style="max-width: 100px; max-height: 100px;">
+                                                            <br>
+                                                            <a href="{{ asset('storage/' . @$get_user[0]->rc_back_image) }}" target="_blank"><b>Click here</b></a>
                                                         @else
                                                             N/A
                                                         @endif
@@ -248,11 +270,14 @@
                                                             @foreach ($get_user as $image)
                                                                 @if($image->image_type == 2)
                                                                 <img src="{{ asset('storage/' . $image->sub_image) }}" alt="Vehicle Image" style="width: 100px; height: 100px; margin-right: 5px;">
+
+                                                               <a href="{{ asset('storage/' . @$image->sub_image) }}" target="_blank"><b>Click here</b></a>
                                                                 @endif
                                                             @endforeach
                                                         @else
                                                             N/A
                                                         @endif
+
                                                     </td>
                                                 </tr>
                                                 <tr>
@@ -262,6 +287,8 @@
                                                             @foreach ($get_user as $image)
                                                                 @if($image->image_type == 1)
                                                                 <img src="{{ asset('storage/' . $image->sub_image) }}" alt="Vehicle Image" style="width: 100px; height: 100px; margin-right: 5px;">
+                                                                <a href="{{ asset('storage/' . @$image->sub_image) }}" target="_blank"><b>Click here</b></a>
+
                                                                 @endif
                                                             @endforeach
                                                         @else
@@ -269,7 +296,7 @@
                                                         @endif
                                                     </td>
                                                 </tr>
-                                                
+
                                                  <tr>
                                                     <td><strong>Insurance End Date:</strong></td>
                                                     <td>{{ @$get_user[0]->ins_end_date ?? 'N/A' }}</td>
@@ -279,12 +306,14 @@
                                                     <td>
                                                         @if (@$get_user[0]->ins_image)
                                                             <img src="{{ asset('storage/' . @$get_user[0]->ins_image) }}" alt="RC Back Image" style="max-width: 100px; max-height: 100px;">
+                                                            <br>
+                                                          <a href="{{ asset('storage/' . @$get_user[0]->ins_image) }}" target="_blank"><b>Click here</b></a>
                                                         @else
                                                             N/A
                                                         @endif
                                                     </td>
                                                 </tr>
-                                                
+
                                                 <tr>
                                                     <td><strong>Pollution End Date:</strong></td>
                                                     <td>{{ @$get_user[0]->pollution_in_date ?? 'N/A' }}</td>
@@ -294,12 +323,15 @@
                                                     <td>
                                                         @if (@$get_user[0]->pollution_image)
                                                             <img src="{{ asset('storage/' . @$get_user[0]->pollution_image) }}" alt="RC Back Image" style="max-width: 100px; max-height: 100px;">
+                                                            <br>
+                                                            <a href="{{ asset('storage/' . @$get_user[0]->pollution_image) }}" target="_blank"><b>Click here</b></a>
                                                         @else
                                                             N/A
                                                         @endif
+
                                                     </td>
                                                 </tr>
-                                                
+
                                                 <tr>
                                                     <td><strong>Commercial Permit End Date:</strong></td>
                                                     <td>{{ @$get_user[0]->cab_com_permit_date ?? 'N/A' }}</td>
@@ -309,12 +341,14 @@
                                                     <td>
                                                         @if (@$get_user[0]->cab_com_permit)
                                                             <img src="{{ asset('storage/' . @$get_user[0]->cab_com_permit) }}" alt="RC Back Image" style="max-width: 100px; max-height: 100px;">
+                                                            <br>
+                                                            <a href="{{ asset('storage/' . @$get_user[0]->cab_com_permit) }}" target="_blank"> <b>Click here </b> </a>
                                                         @else
                                                             N/A
                                                         @endif
                                                     </td>
                                                 </tr>
-                                                
+
                                                 <tr>
                                                     <td><strong>User Status:</strong></td>
                                                     <td>

@@ -107,7 +107,7 @@ class CompanyController extends Controller
     public function booking($id)
     {
         $title = 'Booking List';
-        $get_booking = Booking::where('status', '!=' , 3)->where('booking_status',$id)->get();
+        $get_booking = Booking::where('status', '!=' , 3)->where('booking_status',$id)->orderBy('id','desc')->get();
         $bookings = [];
         foreach ($get_booking as $booking){
             $booking->post_user = User::where('id', $booking->user_id)->first();

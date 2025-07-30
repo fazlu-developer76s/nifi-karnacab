@@ -122,7 +122,8 @@
                                             </tr>
                                             <tr>
                                                 <td><strong>Booking Commission:</strong></td>
-                                                <td>{{ floatval(preg_replace('/[^0-9.]/', '', $data[0]->trip_distance_text)) * $data[0]->vehicle_extra_charges }} ₹</td>
+                                                <!--<td>{{ floatval(preg_replace('/[^0-9.]/', '', $data[0]->trip_distance_text)) * $data[0]->vehicle_extra_charges }} ₹</td>-->
+                                                <td>{{ $data[0]->calculated_commision }}</td>
                                             </tr>
                                             <tr>
                                                 <td><strong>Total Amount:</strong></td>
@@ -158,7 +159,7 @@
                                             </tr>
                                             <tr>
                                                 <td><strong>Created At:</strong></td>
-                                                <td>{{ \Carbon\Carbon::parse($data[0]->created_at)->format('Y-m-d H:i:s') ?? 'N/A' }}</td>
+                                                <td>{{ \Carbon\Carbon::parse($data[0]->created_at)->format('d F Y h:i A') ?? 'N/A' }}</td>
                                             </tr>
 
                                         </tbody>
@@ -283,9 +284,12 @@
                                                         Accept Booking
                                                         @break
                                                     @case(3)
-                                                        Complete Booking
+                                                        Activate Booking
                                                         @break
                                                     @case(4)
+                                                        Complete Booking
+                                                        @break
+                                                                                                @case(5)
                                                         Cancel Booking
                                                         @break
                                                     @default
@@ -294,93 +298,63 @@
                                             </td>
 
                                             {{-- Created At --}}
-                                            <td>{{ \Carbon\Carbon::parse($log->created_at)->format('Y-m-d H:i:s') ?? 'N/A' }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($log->created_at)->format('d F Y h:i A') ?? 'N/A' }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
                             <h4>Transaction Logs</h4>
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>User</th>
-                                        <th>Transaction Type</th>
-                                        <th>Payment Type</th>
-                                        <th>Payment ID</th>
-                                        <th>Amount</th>
-                                        <th>Created At</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($data[0]->statement as $statement)
-                                        <tr>
-                                            <td>{{ $statement->user_name ?? 'N/A' }}</td>
+                         <table class="table table-striped">
+    <thead>
+        <tr>
+            <th>User</th>
+            <th>Transaction Type</th>
+            <th>Payment Type</th>
+            <th>Payment ID</th>
+            
+            <th>Amount</th>
+            <th>Created At</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach ($data[0]->statement as $statement)
+            <tr>
+                {{-- User Name --}}
+                <td>{{ $statement->user_name ?? 'N/A' }}</td>
 
-                                            {{-- Transaction Type Mapping --}}
-                                            <td>
-                                                @switch($statement->transaction_type)
-                                                    @case(1)
-                                                        Accept Booking Charges
-                                                        @break
-                                                    @case(2)
-                                                        Complete Booking Charges
-                                                        @break
-                                                    @case(3)
-                                                        Top Up Wallet
-                                                        @break
-                                                    @case(4)
-                                                        Share Charges Post Booking
-                                                        @break
-                                                    @case(5)
-                                                        Cancel Booking Charges
-                                                        @break
-                                                    @default
-                                                        N/A
-                                                @endswitch
-                                            </td>
+                {{-- Transaction Type: Assuming you want to show payment_mode (e.g., card/DC) --}}
+                <td>{{ ucfirst($statement->payment_mode ?? 'N/A') }}</td>
 
-                                            {{-- Payment Type Mapping --}}
-                                            <td>
-                                                @switch($statement->payment_type)
-                                                    @case(1)
-                                                        Credit
-                                                        @break
-                                                    @case(2)
-                                                        Debit
-                                                        @break
-                                                    @default
-                                                        N/A
-                                                @endswitch
-                                            </td>
+                {{-- Payment Type: Show directly from string --}}
+                <td>{{ ucfirst($statement->payment_type ?? 'N/A') }}</td>
 
-                                            {{-- Payment ID --}}
-                                            <td>{{ $statement->payment_id ?? 'N/A' }}</td>
+                {{-- Payment ID (use transaction_id) --}}
+                <td>{{ $statement->transaction_id ?? 'N/A' }}</td>
 
-                                            {{-- Amount --}}
-                                            <td>{{ number_format($statement->amount, 2) ?? 'N/A' }}</td>
-                                            <td>{{ \Carbon\Carbon::parse($statement->created_at)->format('Y-m-d H:i:s') ?? 'N/A' }}</td>
+                {{-- Amount --}}
+                <td>{{ number_format((float)$statement->amount, 2) ?? 'N/A' }}</td>
 
-                                            {{-- Payment Status Mapping --}}
-                                            <td>
-                                                @switch($statement->payment_status)
-                                                    @case(1)
-                                                        Success
-                                                        @break
-                                                    @case(2)
-                                                        Failed
-                                                        @break
-                                                    @case(3)
-                                                        Process
-                                                        @break
-                                                    @default
-                                                        N/A
-                                                @endswitch
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                {{-- Created At --}}
+                <td>{{ \Carbon\Carbon::parse($statement->created_at)->format('d F Y h:i A') ?? 'N/A' }}</td>
+
+                {{-- Payment Status --}}
+                <td>
+                    @if(strtolower($statement->status) == 'success')
+                        <span class="badge bg-success">Success</span>
+                    @elseif(strtolower($statement->status) == 'failed')
+                        <span class="badge bg-danger">Failed</span>
+                    @elseif(strtolower($statement->status) == 'process')
+                        <span class="badge bg-warning">Process</span>
+                    @else
+                        <span class="badge bg-secondary">N/A</span>
+                    @endif
+                </td>
+            </tr>
+        @endforeach
+    </tbody>
+</table>
+
 
                         </div>
                     </div>

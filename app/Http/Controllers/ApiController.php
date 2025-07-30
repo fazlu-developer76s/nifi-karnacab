@@ -579,6 +579,9 @@ class ApiController extends Controller
         $booking->trip_distance_km = $request->trip_distance_km;
         $booking->rate_per_km = $request->rate_per_km;
         $booking->calculated_fare = $request->calculated_fare;
+        $tripDistance = $request->trip_distance_km ;
+        $ratePerKm = $request->vehicle_extra_charges;
+        $booking->calculated_commision = round($tripDistance * $ratePerKm);
         $get_discount_amount = $request->calculated_fare * (Global_helper::companyDetails()->discount / 100);
 
         $booking->discount = $request->calculated_fare + $get_discount_amount;
@@ -705,7 +708,7 @@ class ApiController extends Controller
         } else {
             // Role: User
 
-            $captain = DB::table('users')->where('id', $get_booking->captain_id)->select('name', 'mobile_no', 'image', 'current_address','vehicle_number')->first();
+            $captain = DB::table('users')->where('id', $get_booking->captain_id)->select('name', 'mobile_no', 'image', 'current_address','vehicle_number','rc_number')->first();
             $get_booking->captain_info = $captain;
             $originAddress = $captain->current_address ?? null;
             $destinationAddress = $get_booking->pick_up_location ?? null;
@@ -859,6 +862,20 @@ class ApiController extends Controller
                     'message' => 'You have already accepted a booking. Please complete or cancel this booking before accepting another.',
                 ]);
             }
+            
+          $getLastPayment = DB::table('tbl_booking')
+                ->where('booking_status', 4)
+                ->orderByDesc('id')
+                ->first();
+            
+            if ($getLastPayment && $getLastPayment->payment_status !== 'success') {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Please settle your last booking commission before accepting a new one.',
+                ]);
+            }
+
+            
             $get_booking = Booking::where('id', $id)->first();
             if ($get_booking->booking_status != 1) {
                 return response()->json(['status' => 'Error', 'message' => 'Booking status is not accepted'], 401);
@@ -918,8 +935,8 @@ class ApiController extends Controller
         }
 
         // captain side complete booking
-        if ($request->booking_status == 4) {
-
+        if ($request->booking_status == 4 && $request->payment_mode) {
+            
             $get_booking = Booking::where('id', $id)->first();
             // if ($get_booking->booking_status != 1) {
             //     return response()->json(['status' => 'Error', 'message' => 'Booking status is not accepted'], 401);
@@ -933,7 +950,14 @@ class ApiController extends Controller
             $this->sendNotificationToUser($get_user->fcm_token,'Booking Completed','Your booking has been completed by ' . $get_captain->name);
             DB::table('tbl_booking')->where('id',$get_captain->id)->update(['current_address'=>$get_booking->drop_address]);
             $captain_active = DB::table('users')->where('id',$get_captain->id)->update(['is_booking_active'=>2]);
-
+        
+            if($request->payment_mode){
+                $transactionId = 'TXN' . rand(1000000000, 9999999999);
+                $transactionIdcaptain = 'TXN' . rand(1000000000, 9999999999);
+                DB::table('payments')->insert(['booking_id'=>$id,'user_id'=>$get_user->id,'status'=>'success','payment_mode'=> $request->payment_mode , 'payment_type'=> 'debit','amount'=> $get_booking->calculated_fare ,'transaction_id' => $transactionId]);
+                DB::table('payments')->insert(['booking_id'=>$id,'user_id'=>$get_captain->id,'status'=>'success','payment_mode'=> $request->payment_mode ,'payment_type'=>'credit','amount'=> $get_booking->calculated_fare , 'transaction_id' => $transactionIdcaptain]);
+            }
+        
             return response()->json(['status' => 'OK', 'message' => 'Booking Completed successfully'], 200);
         }
     }

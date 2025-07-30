@@ -145,5 +145,6 @@ class UnsubscribeController extends Controller
             return true;
         }
     }
+  
 
 }

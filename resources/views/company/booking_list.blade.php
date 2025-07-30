@@ -245,7 +245,10 @@
                                         <td>{{ $book->vehicle_extra_charges }}₹</td>
                                         <td>{{ $book->calculated_fare }}₹</td>
                                         <td>{{ $booking_status }}</td>
-                                        <td>{{ \Carbon\Carbon::parse(@$booking_status->created_at)->format('d F Y h:i A') ?? 'N/A' }}
+                                       <td>
+                                            {{ $book->created_at ? \Carbon\Carbon::parse($book->created_at)->format('d F Y h:i A') : 'N/A' }}
+                                        </td>
+
                                         <td>
                                             @if($book->booking_status != 1)
                                             <a href="{{ route('lead.view', $book->id) }}" class="text-success me-2">

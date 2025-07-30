@@ -92,9 +92,9 @@
                                                   </div>
                                             </td>
                                             <td>
-                                                <a href="{{ route('permission', $role->id) }}" class="text-primary me-2">
-                                                    <i class="fa fa-lock"></i>
-                                                </a>
+                                                <!--<a href="{{ route('permission', $role->id) }}" class="text-primary me-2">-->
+                                                <!--    <i class="fa fa-lock"></i>-->
+                                                <!--</a>-->
                                                 <a href="{{ route('edit.roles', $role->id) }}" class="text-primary me-2">
                                                     <i class="fa fa-edit"></i>
                                                 </a>

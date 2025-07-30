@@ -17,11 +17,22 @@ class DistrictController extends Controller
     {
         $title = 'District';
         $get_district = DB::table('tbl_district')
-            ->join('tbl_state', 'tbl_district.state_id', '=', 'tbl_state.id')
-            ->select('tbl_district.*', 'tbl_state.title as state')
-            ->where('tbl_district.status', '!=', 3)
-            ->orderBy('tbl_district.id', 'desc')
-            ->get();
+    ->join('tbl_state', 'tbl_district.state_id', '=', 'tbl_state.id')
+    ->leftJoin('users', 'tbl_district.id', '=', 'users.district')
+    ->select(
+        'tbl_district.*',
+        'tbl_state.title as state',
+        DB::raw('tbl_district.id as district_id'),
+        DB::raw('COUNT(users.id) as count_users')
+    )
+    ->where('tbl_district.status', '!=', 3)
+    ->groupBy('tbl_district.id', 'tbl_state.title') // Group by necessary columns
+    ->orderBy('tbl_district.id', 'desc')
+    ->get();
+//   echo "<pre>";
+//   print_r($get_district);
+//   die;
+
         // $get_district = District::where('status', '!=', 3)->orderBy('id', 'desc')->get();
         $get_state = State::where('status', 1)->orderBy('id', 'desc')->get();
         return view('district.index', compact('title', 'get_district','get_state'));
@@ -69,12 +80,20 @@ class DistrictController extends Controller
     {
         $title = 'Edit District ';
         $find_district = District::find($id);
-        $get_district = DB::table('tbl_district')
-            ->join('tbl_state', 'tbl_district.state_id', '=', 'tbl_state.id')
-            ->select('tbl_district.*', 'tbl_state.title as state')
-            ->where('tbl_district.status', '!=', 3)
-            ->orderBy('tbl_district.id', 'desc')
-            ->get();
+    $get_district = DB::table('tbl_district')
+    ->join('tbl_state', 'tbl_district.state_id', '=', 'tbl_state.id')
+    ->leftJoin('users', 'tbl_district.id', '=', 'users.district')
+    ->select(
+        'tbl_district.*',
+        'tbl_state.title as state',
+        DB::raw('tbl_district.id as district_id'),
+        DB::raw('COUNT(users.id) as count_users')
+    )
+    ->where('tbl_district.status', '!=', 3)
+    ->groupBy('tbl_district.id', 'tbl_state.title') // Group by necessary columns
+    ->orderBy('tbl_district.id', 'desc')
+    ->get();
+    
         // $get_district = District::where('status', '!=', 3)->orderBy('id', 'desc')->get();
         $get_state = State::where('status', 1)->orderBy('id', 'desc')->get();
 

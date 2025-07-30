@@ -14,10 +14,20 @@ use Svg\Tag\Rect;
 class MemberController extends Controller
 {
 
-    public function index()
+    public function index(Request $request , $type)
     {
         $title = "Member List";
-        $allmember = DB::table('users')->leftJoin('roles', 'roles.id', '=', 'users.role_id')->where('users.role_id', '!=', 1)->where('users.status', '!=', 3)->select('users.*', 'roles.title')->orderBy('users.id', 'desc')->get();
+        $query = DB::table('users');
+        $query->leftJoin('roles', 'roles.id', '=', 'users.role_id');
+        if($type){
+            $query->where('users.role_id',$type);
+        }
+        if(isset($request->district_id) && $request->district_id != ""){
+            $query->where('users.district',$request->district_id);
+        }
+        $query->where('users.role_id', '!=', 1)->where('users.status', '!=', 3)->select('users.*', 'roles.title')->orderBy('users.id', 'desc');
+        $allmember = $query->get();
+        
         return view('member.index', compact('title', 'allmember'));
     }
 

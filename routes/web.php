@@ -35,6 +35,8 @@ Route::get('/', function () {
 });
 
 Auth::routes();
+
+
 Route::match(['get', 'post'], '/unsubscribe', [UnsubscribeController::class, 'index'])->name('unsubscribe');
 // Grouping all routes with auth middleware
 Route::middleware(['auth', 'checkRole'])->group(function () {
@@ -86,7 +88,7 @@ Route::middleware(['auth', 'checkRole'])->group(function () {
     Route::delete('/destroy-permission_subcategory/{id}', [PermissionsubCategory::class, 'destroy_permission_subcategory'])->name('destroy.permission_subcategory');
 
     // Member Routes
-    Route::get('/member', [MemberController::class, 'index'])->name('member');
+    Route::get('/member/{type}', [MemberController::class, 'index'])->name('member');
     Route::get('approved/member', [MemberController::class, 'approved_index'])->name('approved.member');
     Route::get('pending/member', [MemberController::class, 'pending_index'])->name('pending.member');
     Route::get('/borrower', [MemberController::class, 'borrower'])->name('borrower');
@@ -240,6 +242,7 @@ Route::middleware(['auth', 'checkRole'])->group(function () {
     Route::get('transaction-list', [CompanyController::class, 'transaction_list'])->name('transaction.list');
     Route::get('/generate-invoice/{id}', [CompanyController::class, 'generateInvoice'])->name('generate.invoice');
     Route::post('update-payment-status', [CompanyController::class, 'update_payment_status'])->name('update.payment.status');
+    Route::get('transaction', [CompanyController::class, 'transaction'])->name('transaction');
 
 
     // enquiry assign

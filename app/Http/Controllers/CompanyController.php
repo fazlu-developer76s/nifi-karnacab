@@ -204,4 +204,32 @@ class CompanyController extends Controller
             die;
         }
     }
+
+    public function transaction(Request $request)
+    {
+        $title = 'Transaction List';
+        $get_user = DB::table('users')->where('role_id', 2)->where('status', 1)->get();
+        $query = DB::table('payments as a')->leftJoin('users as b', 'a.user_id', '=', 'b.id')
+            ->select('a.*', 'b.name as user_name', 'b.email as user_email', 'b.mobile_no as user_mobile_no');
+         if($request->from_date && $request->to_date){
+            $query->whereBetween('a.created_at', [$request->from_date, $request->to_date]);
+         }
+         if($request->user_id){
+            $query->where('a.user_id', $request->user_id);
+         }
+         $alltransaction = $query->where('a.type','payu')->orderBy('a.id', 'desc')->get();
+        //  dd($alltransaction);
+
+         $sum_amount = DB::table('payments')
+            ->where('type', 'payu')
+            ->when($request->from_date && $request->to_date, function ($query) use ($request) {
+                return $query->whereBetween('created_at', [$request->from_date, $request->to_date]);
+            })
+            ->when($request->user_id, function ($query) use ($request) {
+                return $query->where('user_id', $request->user_id);
+            })
+            ->sum('amount');
+        //  dd($alltransaction);
+        return view('company.transaction_list', compact('alltransaction','get_user','sum_amount'));
+    }
 }

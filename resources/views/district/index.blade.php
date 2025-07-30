@@ -90,6 +90,7 @@
                                             <th width="1%"></th>
                                             <th class="text-nowrap">State </th>
                                             <th class="text-nowrap">District </th>
+                                            <th class="text-nowrap">Users </th>
                                             <th class="text-nowrap">Created Date</th>
                                             <th class="text-nowrap">Status</th>
                                             <th class="text-nowrap">Action</th>
@@ -102,6 +103,8 @@
                                             <td width="1%" class="fw-bold text-dark">{{ $loop->iteration }}</td>
                                             <td>{{ $district->state }}</td>
                                             <td>{{ $district->title }}</td>
+                                            <td> <a href="{{ route('member',2) }}?district_id={{ $district->id}} ">{{ $district->count_users }} </td>
+                                            
                                             <td>{{ \Carbon\Carbon::parse($district->created_at)->format('d F Y h:i A') }}</td>
 
                                             <td>

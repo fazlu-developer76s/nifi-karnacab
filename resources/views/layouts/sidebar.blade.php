@@ -26,8 +26,13 @@
                         </a>
                     </div>
                     <div class="menu-item">
-                        <a href="{{ route('member') }}" class="menu-link">
-                            <div class="menu-text">Members</div>
+                        <a href="{{ route('member',2) }}" class="menu-link">
+                            <div class="menu-text">Captains</div>
+                        </a>
+                    </div>
+                    <div class="menu-item">
+                        <a href="{{ route('member',3) }}" class="menu-link">
+                            <div class="menu-text">Customers</div>
                         </a>
                     </div>
                     {{-- <div class="menu-item">
@@ -126,6 +131,20 @@
                     <div class="menu-item">
                         <a href="{{ route('booking',5) }}" class="menu-link ">
                             <div class="menu-text"> Cancel Booking</div>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+                   <div class="menu-item has-sub"> <a href="javascript:;" class="menu-link ">
+                    <div class="menu-icon"> <i class="fas fa-list"></i> </div>
+                    <div class="menu-text">Transaction</div>
+                    <div class="menu-caret"></div>
+                </a>
+                <div class="menu-submenu">
+                    <div class="menu-item">
+                        <a href="{{ route('transaction') }}" class="menu-link ">
+                            <div class="menu-text"> Transaction List</div>
                         </a>
                     </div>
                 </div>

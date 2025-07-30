@@ -47,7 +47,7 @@ class AuthController extends Controller
         $otp = 123456;
         $mobile_no  = $request->mobile_no;
         $type  = $request->type;
-        if ($mobile_no != "7428059960" && $mobile_no != "8700682075") {
+        // if ($mobile_no != "7428059960" && $mobile_no != "8700682075" && $mobile_no  != "9555804662") {
             $entity_id = 1701159540601889654;
             $senderId  = "NRSOFT";
             $temp_id   = "1707164805234023036";
@@ -82,7 +82,7 @@ class AuthController extends Controller
                 return "Error: $error";
             }
             curl_close($ch);
-        }
+        // }
         if ($type == "register") {
             $module_type = 2;
         } else {
@@ -232,9 +232,12 @@ class AuthController extends Controller
         //     ], 401);
         // }
 
-        $user = User::where(function ($query) use ($request) {
-            $query->where('mobile_no', $request->mobile_no)->where('role_id',$request->role_id);
-        })->where('status', '!=', 3)->first();
+         $user = User::where('mobile_no', $request->mobile_no)
+            ->where('role_id', $request->role_id)
+            ->where('status', '!=', 3)
+            ->first();
+
+        
         if ($user) {
             return response()->json([
                 'status' => "Error",
@@ -242,6 +245,23 @@ class AuthController extends Controller
             ], 409);
         }
         $user = new User();
+        
+        $formattedAddress = "";
+        if (!empty($request->lat) && !empty($request->long)) {
+            $apiKey = env('GOOGLE_MAPS_API');
+            $lat = $request->lat;
+            $lng = $request->long;
+            $url = "https://maps.googleapis.com/maps/api/geocode/json?latlng={$lat},{$lng}&key={$apiKey}";
+            $response = file_get_contents($url);
+            $responseData = json_decode($response, true);
+            if (!empty($responseData['results'])) {
+                $formattedAddress = $responseData['results'][0]['formatted_address'];
+            }
+        $user->lat  = $request->lat;
+        $user->long = $request->long;
+        $user->current_address =  $formattedAddress;
+        }
+   
         $user->name = $request->name;
         // $user->email = $request->email;
         $user->mobile_no = $request->mobile_no;
@@ -310,6 +330,23 @@ class AuthController extends Controller
             DB::table('users')
                 ->where('id', $user->id)
                 ->update(['fcm_token' => $request->fcm_token]);
+                
+        $formattedAddress = "";
+        if (!empty($request->lat) && !empty($request->long)) {
+            $apiKey = env('GOOGLE_MAPS_API');
+            $lat = $request->lat;
+            $lng = $request->long;
+            $url = "https://maps.googleapis.com/maps/api/geocode/json?latlng={$lat},{$lng}&key={$apiKey}";
+            $response = file_get_contents($url);
+            $responseData = json_decode($response, true);
+            if (!empty($responseData['results'])) {
+                // Get the formatted address
+                $formattedAddress = $responseData['results'][0]['formatted_address'];
+
+            }
+           DB::table('users')->where('id', $user->id)->update(['lat' => $request->lat , 'long' => $request->long , 'current_address'=> $formattedAddress ]);
+        }
+        
             if (!$user) {
                 return response()->json([
                     'status' => "Error",
@@ -451,9 +488,9 @@ class AuthController extends Controller
     {
    
          $get_user = DB::table('users')->where('id',$request->user->id)->first();
-         if($get_user->mobile_no == "8700682075" || $get_user->mobile_no == "7428059960"){
-           return response()->json(['status' => 'OK', 'message' => 'Profile updated successfully'], 200);
-         }
+        //  if($get_user->mobile_no == "8700682075" || $get_user->mobile_no == "7428059960" && $get_user->mobile_no != "9555804662" ){
+        //   return response()->json(['status' => 'OK', 'message' => 'Profile updated successfully'], 200);
+        //  }
          $formattedAddress = "";
         if (!empty($request->lat) && !empty($request->long)) {
             $apiKey = env('GOOGLE_MAPS_API');

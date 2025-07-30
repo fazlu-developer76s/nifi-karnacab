@@ -93,7 +93,7 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label">Radius In Num</label>
+                                            <label class="form-label">Radius In Km</label>
                                             <input type="number" name="radius" class="form-control" value="{{ old('radius', $company->radius) }}" required>
                                             @error('radius')
                                             <div class="invalid-feedback">{{ $message }}</div>

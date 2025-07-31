@@ -28,8 +28,9 @@ Route::get('get-vehicle', [ApiController::class, 'get_vehicle']);
 Route::post('notification', [ApiController::class, 'sendNotificationToUser']);
 Route::post('/payment/callback', [PaymentController::class, 'callback']);
 Route::middleware(['jwt'])->group(function () {
-Route::post('/initiate-payment', [PaymentController::class, 'fetch_payment']);
-Route::get('/fetch-transaction', [PaymentController::class, 'fetch_transaction']);
+    Route::post('user/update-last-seen', [AuthController::class, 'last_seen']);
+    Route::post('/initiate-payment', [PaymentController::class, 'fetch_payment']);
+    Route::get('/fetch-transaction', [PaymentController::class, 'fetch_transaction']);
     Route::post('user/image-upload', [ApiController::class, 'uploadImage']);
     Route::post('user/update-profile', [AuthController::class, 'update_profile']);
     Route::get('user/get-state', [ApiController::class, 'get_state']);

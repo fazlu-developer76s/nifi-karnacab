@@ -27,7 +27,7 @@ class MemberController extends Controller
         }
         $query->where('users.role_id', '!=', 1)->where('users.status', '!=', 3)->select('users.*', 'roles.title')->orderBy('users.id', 'desc');
         $allmember = $query->get();
-        
+
         return view('member.index', compact('title', 'allmember'));
     }
 
@@ -154,8 +154,9 @@ class MemberController extends Controller
         return view('member.create', compact('title', 'get_role'));
     }
 
-    public function edit($id)
+    public function edit($id , $role_id)
     {
+        // echo $role_id; die;
         $title = "Edit Member";
         $get_member = Member::where('status', '!=', 3)->where('role_id', '!=', 1)->where('id', $id)->first();
         if ($get_member->role_id == 2) {
@@ -168,7 +169,7 @@ class MemberController extends Controller
 
     public function view($id)
     {
-     
+
         $title = "Edit Member";
         $get_user = DB::table('users as a')
             ->leftJoin('tbl_vehicle_image as b', 'a.id', '=', 'b.user_id')
@@ -217,7 +218,7 @@ class MemberController extends Controller
 
             // Redirect back with an error message if any data exists
             if ($message) {
-                return redirect()->route('member.edit', ['id' => $request->hidden_id])
+                return redirect()->route('member.edit', ['id' => $request->hidden_id,'role_id',$request->role_id])
                     ->with('error', trim($message) . ' Already Exists');
             }
         }
@@ -234,7 +235,7 @@ class MemberController extends Controller
         $member->save(); // Use save() to persist the changes
 
         // Redirect to the member list with a success message
-        return redirect()->route('member')->with('success', 'Member Updated Successfully');
+        return redirect()->route('member',$request->role_id)->with('success', 'Member Updated Successfully');
     }
 
     public function update_userstatus(Request $request)
@@ -255,14 +256,15 @@ class MemberController extends Controller
 
 
 
-    public function destroy($id)
+    public function destroy($id,$role_id)
     {
 
         // $member = Member::findOrFail($id);
         // $member->status = 3;
         // $member->update();
+        // echo $role_id; die;
         DB::table('users')->where('id',$id)->delete();
-        return redirect()->route('member')->with('success', 'Member deleted successfully.');
+        return redirect()->route('member',$role_id)->with('success', 'Member deleted successfully.');
     }
 
     public function check_exist_data($request, $id)
@@ -273,8 +275,8 @@ class MemberController extends Controller
             $query->where('id', '!=', $id);
         }
         $check_member = $query->where(function ($q) use ($request) {
-            $q->where('email', $request->email)
-                ->orWhere('mobile_no', $request->mobile_no);
+            $q->where('mobile_no', $request->mobile_no)->where('role_id',$request->role_id);
+                // ->orWhere('mobile_no', $request->mobile_no);
         })->first();
 
         return $check_member;

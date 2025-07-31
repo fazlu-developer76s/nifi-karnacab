@@ -96,11 +96,12 @@ Route::middleware(['auth', 'checkRole'])->group(function () {
     Route::post('/user_location/check-otp', [MemberController::class, 'check_otp'])->name('userlocation.otp.check');
 
     Route::match(['get', 'post'], '/member/create', [MemberController::class, 'create'])->name('member.create');
-    Route::get('/member/edit/{id}', [MemberController::class, 'edit'])->name('member.edit');
+    Route::get('/member/edit/{id}/{role_id}', [MemberController::class, 'edit'])->name('member.edit');
+
     Route::get('/member/view/{id}', [MemberController::class, 'view'])->name('member.view');
     Route::post('/member/update/userstatus', [MemberController::class, 'update_userstatus'])->name('update.userstatus');
     Route::post('/member/update', [MemberController::class, 'update'])->name('member.update');
-    Route::delete('/member/delete/{id}', [MemberController::class, 'destroy'])->name('member.destroy');
+    Route::delete('/member/delete/{id}/{role_id}', [MemberController::class, 'destroy'])->name('member.destroy');
     Route::get('/member/kyc', [MemberController::class, 'member_kyc'])->name('member.kyc');
     Route::get('/view/member/kyc/{id}', [MemberController::class, 'view_member_kyc'])->name('view.member.kyc');
     Route::put('/update/kyc/{id}', [MemberController::class, 'update_kyc_status'])->name('update.kyc.status');

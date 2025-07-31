@@ -77,12 +77,12 @@
                                                 <i class="fa fa-eye"></i>
                                             </a>
                                             @endif
-
-                                            <a href="{{ route('member.edit', $member->id) }}" class="text-primary me-2">
+                                            <a href="{{ route('member.edit', ['id' => $member->id,'role_id' => request()->segment(2)]) }}" class="text-primary me-2">
                                                 <i class="fa fa-edit"></i>
                                             </a>
 
-                                            <form action="{{ route('member.destroy', $member->id) }}" method="POST" style="display: inline;">
+
+                                            <form action="{{ route('member.destroy', ['id' => $member->id,'role_id' => request()->segment(2)]) }}" method="POST" style="display: inline;">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-link text-danger p-0" onclick="return confirm('Are you sure you want to delete this member?');">

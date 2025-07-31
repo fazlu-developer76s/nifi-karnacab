@@ -29,7 +29,7 @@ class AuthController extends Controller
                 'regex:/^[6-9][0-9]{9}$/',
             ]
         ]);
-    
+
         $get_user = User::where('status',1)->where('mobile_no',$request->mobile_no)->where('role_id',$request->role_id)->first();
         if($get_user && $request->type == "register"){
             return response()->json([
@@ -43,7 +43,7 @@ class AuthController extends Controller
                 'message' => "User not found",
             ], 404);
         }
-        
+
         $otp = 123456;
         $mobile_no  = $request->mobile_no;
         $type  = $request->type;
@@ -237,7 +237,7 @@ class AuthController extends Controller
             ->where('status', '!=', 3)
             ->first();
 
-        
+
         if ($user) {
             return response()->json([
                 'status' => "Error",
@@ -245,7 +245,7 @@ class AuthController extends Controller
             ], 409);
         }
         $user = new User();
-        
+
         $formattedAddress = "";
         if (!empty($request->lat) && !empty($request->long)) {
             $apiKey = env('GOOGLE_MAPS_API');
@@ -261,7 +261,7 @@ class AuthController extends Controller
         $user->long = $request->long;
         $user->current_address =  $formattedAddress;
         }
-   
+
         $user->name = $request->name;
         // $user->email = $request->email;
         $user->mobile_no = $request->mobile_no;
@@ -330,7 +330,7 @@ class AuthController extends Controller
             DB::table('users')
                 ->where('id', $user->id)
                 ->update(['fcm_token' => $request->fcm_token]);
-                
+
         $formattedAddress = "";
         if (!empty($request->lat) && !empty($request->long)) {
             $apiKey = env('GOOGLE_MAPS_API');
@@ -346,7 +346,7 @@ class AuthController extends Controller
             }
            DB::table('users')->where('id', $user->id)->update(['lat' => $request->lat , 'long' => $request->long , 'current_address'=> $formattedAddress ]);
         }
-        
+
             if (!$user) {
                 return response()->json([
                     'status' => "Error",
@@ -486,7 +486,7 @@ class AuthController extends Controller
     }
     public function update_profile(Request $request)
     {
-   
+
          $get_user = DB::table('users')->where('id',$request->user->id)->first();
         //  if($get_user->mobile_no == "8700682075" || $get_user->mobile_no == "7428059960" && $get_user->mobile_no != "9555804662" ){
         //   return response()->json(['status' => 'OK', 'message' => 'Profile updated successfully'], 200);
@@ -525,7 +525,7 @@ class AuthController extends Controller
 
         $user = User::findOrFail($request->user->id);
         if($formattedAddress){
-            
+
         $user->current_address =  $formattedAddress;
         }
         if ($request->hasFile('vehicle_image')) {
@@ -565,4 +565,15 @@ class AuthController extends Controller
         $user->save();
         return response()->json(['status' => 'OK', 'message' => 'Profile updated successfully'], 200);
     }
+
+    public function last_seen(Request $request){
+    $user_id = $request->user->id;
+    $update_last_seen = DB::table('users')->where('id',$user_id)->update(['last_seen'=>now()]);
+    return response()->json([
+        'status' => 'OK',
+        'message' =>"Last seen updated successfully"
+    ]);
+
+}
+
 }

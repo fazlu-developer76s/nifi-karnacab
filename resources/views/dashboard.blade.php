@@ -31,7 +31,7 @@
                                     <div class="alert alert-callout alert-success no-margin">
                                         <!-- Dynamic Content -->
                                         <span class="opacity-100">{{ str_replace('_',' ',$data['name'])  }}</span><br>
-                                        <strong class="text-xl">{{ $data['count'] }}</strong>
+                                        <strong class="text-xl">{{ $data['count'] }} {{ $helper->activeUserCount() }}</strong>
                                     </div>
                                 </div>
                             </div>

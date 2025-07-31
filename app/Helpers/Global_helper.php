@@ -1,12 +1,15 @@
 <?php
+
 namespace App\Helpers;
 
 use App\Models\Company;
 use App\Models\User;
+use Carbon\Carbon;
 use DB;
+
 class Global_helper
 {
-    public static function GenerateOTP($userDetails,$module_type,$otp_type,$mobile = "")
+    public static function GenerateOTP($userDetails, $module_type, $otp_type, $mobile = "")
     {
         // dd($mobile);
         // $module_type  is the module type like 1 login 2 update email or mobile
@@ -15,8 +18,7 @@ class Global_helper
         $expire_previous_otp = self::ExpireOTP($userDetails->id, $module_type, $otp_type);
 
         $otp = self::userOTP($userDetails, $mobile);
-        if($mobile)
-        {
+        if ($mobile) {
             $genrateOTP = DB::table('tbl_otp')->insert([
                 'otp' => $otp,
                 'user_id' => $userDetails->id, // Assuming you want to associate the OTP with a user
@@ -26,9 +28,7 @@ class Global_helper
                 'created_at' => now(), // Current timestamp
                 'updated_at' => now(),
             ]);
-        }
-        else
-        {
+        } else {
             $genrateOTP = DB::table('tbl_otp')->insert([
                 'otp' => $otp,
                 'user_id' => $userDetails->id, // Assuming you want to associate the OTP with a user
@@ -39,28 +39,25 @@ class Global_helper
             ]);
         }
 
-        if($genrateOTP)
-        {
-          return true;
-        }
-    }
-
-    public static function ExpireOTP($user_id,$module_type,$otp_type)
-    {
-       $expireOTP = DB::table('tbl_otp')
-            ->where('user_id', $user_id)
-            ->where('status',1)
-            ->where('module_type',$module_type)
-            ->where('otp_type',$otp_type)
-            ->update(['status' => 2]);
-        if($expireOTP)
-        {
+        if ($genrateOTP) {
             return true;
         }
-
     }
 
-    public static function userOTP($userDetails,$mobile = "")
+    public static function ExpireOTP($user_id, $module_type, $otp_type)
+    {
+        $expireOTP = DB::table('tbl_otp')
+            ->where('user_id', $user_id)
+            ->where('status', 1)
+            ->where('module_type', $module_type)
+            ->where('otp_type', $otp_type)
+            ->update(['status' => 2]);
+        if ($expireOTP) {
+            return true;
+        }
+    }
+
+    public static function userOTP($userDetails, $mobile = "")
     {
         // SMS API Integration
         $otp = 1234;
@@ -82,7 +79,7 @@ class Global_helper
             'Phno'      => $mobile_no,
             'Msg'       => $temp,
             'EntityID'  => $entity_id,
-            'TemplateID'=> $temp_id
+            'TemplateID' => $temp_id
         ]);
         $ch = curl_init();
 
@@ -110,10 +107,9 @@ class Global_helper
 
     public static function GenerateEmailOTP($user_info, $module_type, $otp_type, $email = "")
     {
-        $expire_previous_otp = self::ExpireOTP($user_info->id,$module_type, $otp_type);
+        $expire_previous_otp = self::ExpireOTP($user_info->id, $module_type, $otp_type);
         $otp = rand(1000, 9999);
-        if($email)
-        {
+        if ($email) {
             $genrateOTP = DB::table('tbl_otp')->insert([
                 'otp' => $otp,
                 'user_id' => $user_info->id, // Assuming you want to associate the OTP with a user
@@ -123,17 +119,15 @@ class Global_helper
                 'created_at' => now(), // Current timestamp
                 'updated_at' => now(),
             ]);
-        }
-        else
-        {
-        $genrateOTP = DB::table('tbl_otp')->insert([
-            'otp' => $otp,
-            'user_id' => $user_info->id, // Assuming you want to associate the OTP with a user
-            'module_type' => $module_type,
-            'otp_type' => $otp_type,
-            'created_at' => now(), // Current timestamp
-            'updated_at' => now(),
-        ]);
+        } else {
+            $genrateOTP = DB::table('tbl_otp')->insert([
+                'otp' => $otp,
+                'user_id' => $user_info->id, // Assuming you want to associate the OTP with a user
+                'module_type' => $module_type,
+                'otp_type' => $otp_type,
+                'created_at' => now(), // Current timestamp
+                'updated_at' => now(),
+            ]);
         }
         $data['to'] = ($email) ? $email : $user_info->email; // Placeholder email
         // dd($data);
@@ -218,7 +212,7 @@ class Global_helper
             </body>
             </html>';
 
-            return $data;
+        return $data;
     }
 
 
@@ -256,72 +250,73 @@ class Global_helper
 
         // EMI calculation formula
         $emi = ($principal * $periodicInterestRate * pow(1 + $periodicInterestRate, $loanTenurePeriods)) /
-               (pow(1 + $periodicInterestRate, $loanTenurePeriods) - 1);
+            (pow(1 + $periodicInterestRate, $loanTenurePeriods) - 1);
 
         return number_format($emi, 2);
     }
 
-    public static function getDynamicUrl(){
-      return  DB::table('dynamic_url')->where('status',1)->get();
+    public static function getDynamicUrl()
+    {
+        return  DB::table('dynamic_url')->where('status', 1)->get();
     }
 
     public static function companyDetails()
     {
-        return Company::where('status',1)->first();
+        return Company::where('status', 1)->first();
     }
 
 
-    public static function getRolePermissions($role_id,$permission_name){
+    public static function getRolePermissions($role_id, $permission_name)
+    {
 
-        $get_permission = DB::table('role_permission as a')->join('permissions as b','a.permission_id', '=' , 'b.id')->join('permission_category as c','b.per_cate_id','=','c.id')->
-        select('a.*','b.title','c.category_name')->where('a.status',1)->where('b.status',1)->where('c.status',1)->where('a.role_id',$role_id)->where('b.title',$permission_name)->first();
+        $get_permission = DB::table('role_permission as a')->join('permissions as b', 'a.permission_id', '=', 'b.id')->join('permission_category as c', 'b.per_cate_id', '=', 'c.id')->select('a.*', 'b.title', 'c.category_name')->where('a.status', 1)->where('b.status', 1)->where('c.status', 1)->where('a.role_id', $role_id)->where('b.title', $permission_name)->first();
 
-        if(isset($get_permission->permission_status) && $get_permission->permission_status == 1){
+        if (isset($get_permission->permission_status) && $get_permission->permission_status == 1) {
             return 1;
-        }else{
+        } else {
             return 2;
         }
     }
 
- public static function getSidebarRolePermissions($role_id, $category_name)
-{
-    // Fetch the category based on the category name
-    $get_category = DB::table('permission_category')
-        ->where('status', 1)
-        ->where('category_name', $category_name)
-        ->first();
+    public static function getSidebarRolePermissions($role_id, $category_name)
+    {
+        // Fetch the category based on the category name
+        $get_category = DB::table('permission_category')
+            ->where('status', 1)
+            ->where('category_name', $category_name)
+            ->first();
 
-    // If the category is not found, return 2 (no permissions)
-    if (!$get_category) {
-        return 2;
+        // If the category is not found, return 2 (no permissions)
+        if (!$get_category) {
+            return 2;
+        }
+
+        // Fetch permissions for the given role and category
+        $get_permission = DB::table('permissions as a')
+            ->join('role_permission as b', 'b.permission_id', '=', 'a.id')
+            ->select('a.*', 'b.permission_status as permission_status')
+            ->where('a.status', 1)
+            ->where('b.status', 1)
+            ->where('b.role_id', $role_id)
+            ->where('a.per_cate_id', $get_category->id)
+            ->where(function ($query) {
+                $query->orWhere('b.permission_status', 1);
+            })
+            ->get();
+
+        // Check if there is any permission with `permission_status`
+        $has_permission = $get_permission->contains('permission_status', 1);
+
+        return $has_permission ? 1 : 2;
     }
-
-    // Fetch permissions for the given role and category
-    $get_permission = DB::table('permissions as a')
-        ->join('role_permission as b', 'b.permission_id', '=', 'a.id')
-        ->select('a.*', 'b.permission_status as permission_status')
-        ->where('a.status', 1)
-        ->where('b.status', 1)
-        ->where('b.role_id', $role_id)
-        ->where('a.per_cate_id', $get_category->id)
-        ->where(function ($query) {
-            $query->orWhere('b.permission_status', 1);
-        })
-        ->get();
-
-    // Check if there is any permission with `permission_status`
-    $has_permission = $get_permission->contains('permission_status', 1);
-
-    return $has_permission ? 1 : 2;
-}
 
     public static function Propertylist($type)
     {
         $query = DB::table('properties');
-        if ($type==1 || $type == 2) {
+        if ($type == 1 || $type == 2) {
             $query->where('is_property_verified', $type)->where('status', 1);
-        }else{
-              $query->where('status', 2 );
+        } else {
+            $query->where('status', 2);
         }
 
         return $query->count();
@@ -330,10 +325,10 @@ class Global_helper
     public static function Sellers($type)
     {
         $query = DB::table('users');
-        if ($type==1 || $type == 2) {
+        if ($type == 1 || $type == 2) {
             $query->where('status', 1);
-        }else{
-              $query->where('status', 2 );
+        } else {
+            $query->where('status', 2);
         }
 
         return $query->count();
@@ -380,21 +375,31 @@ class Global_helper
     }
 
 
-     public static function SaveNotification($package_id,$user_id,$subject='',$description='',){
+    public static function SaveNotification($package_id, $user_id, $subject = '', $description = '',)
+    {
         $insert_notification = DB::table('tbl_notification')->insert([
             'booking_id' => $package_id,
             'user_id' => $user_id,
             'subject' => $subject,
             'description' => $description
         ]);
-        if($insert_notification){
+        if ($insert_notification) {
             return true;
         }
     }
 
-
-
-
+    public static function activeUsers()
+    {
+        $activeUsers = DB::table('users')
+            ->where('last_seen', '>=', Carbon::now()->subMinutes(2))
+            ->get();
+        return $activeUsers;
+    }
+    public static function activeUserCount()
+    {
+        $activeUserCount = DB::table('users')
+            ->where('last_seen', '>=', Carbon::now()->subMinutes(2))
+            ->count();
+        return $activeUserCount;
+    }
 }
-
-

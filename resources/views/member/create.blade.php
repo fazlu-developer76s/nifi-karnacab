@@ -28,9 +28,9 @@
                                 <i class="fa fa-user-shield fa-lg fa-fw text-dark text-opacity-50 me-1"></i>
                                 Add Member
                             </div>
-                            <a href="{{ route('member') }}">
+                            {{-- <a href="{{ route('member') }}">
                                 <button class="btn btn-primary">List User</button>
-                            </a>
+                            </a> --}}
                         </div>
                         <form action="{{ route($form_action) }}" method="POST">
                             @csrf
